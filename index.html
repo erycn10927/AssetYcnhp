@@ -22,14 +22,24 @@
         input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
 
         @media print { 
-            @page { size: 50mm 30mm; margin: 0; }
-            body, html { width: 50mm; height: 30mm; background: white; margin: 0; padding: 0; }
+            @page { 
+                size: 50mm 30mm; 
+                margin: 0; 
+            }
+            body, html { 
+                width: 50mm; 
+                height: 30mm; 
+                background: white; 
+                margin: 0; 
+                padding: 0; 
+                overflow: hidden;
+            }
             .no-print { display: none !important; } 
             body * { visibility: hidden; }
             
             #sticker-to-print, #sticker-to-print * { visibility: visible; }
             #sticker-to-print { 
-                position: absolute !important; 
+                position: fixed !important; 
                 left: 0 !important; 
                 top: 0 !important; 
                 width: 420px !important;
@@ -41,6 +51,9 @@
                 transform: scale(0.45) !important;
                 transform-origin: top left !important;
                 page-break-inside: avoid;
+                page-break-after: always;
+                background-color: white !important;
+            } 
             } 
         }
     </style>
