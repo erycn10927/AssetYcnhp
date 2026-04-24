@@ -21,9 +21,10 @@
         input[type="date"]::-webkit-inner-spin-button, 
         input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
 
+        /* การตั้งค่าหน้าพิมพ์ตามขนาด 2.22" x 1.31" */
         @media print { 
-            @page { size: 50mm 30mm; margin: 0; }
-            body, html { width: 50mm; height: 30mm; background: white; margin: 0; padding: 0; }
+            @page { size: 2.22in 1.31in; margin: 0; }
+            body, html { width: 2.22in; height: 1.31in; background: white; margin: 0; padding: 0; overflow: hidden; }
             .no-print { display: none !important; } 
             body * { visibility: hidden; }
             
@@ -32,14 +33,14 @@
                 position: absolute !important; 
                 left: 0 !important; 
                 top: 0 !important; 
-                width: 420px !important;
-                height: 252px !important;
+                width: 2.22in !important;
+                height: 1.31in !important;
                 margin: 0 !important; 
                 box-shadow: none !important; 
                 border: none !important; 
                 border-radius: 0 !important;
-                transform: scale(0.45) !important;
-                transform-origin: top left !important;
+                padding: 4px !important;
+                display: flex !important;
                 page-break-inside: avoid;
             } 
         }
@@ -161,87 +162,6 @@
                 </div>
             );
 
-            // ==========================================
-            // Component สำหรับอัปโหลดรูป / Paste รูปภาพ
-            // ==========================================
-            const ImageUploadField = ({ label, value, onChange }) => {
-                const fileInputRef = useRef(null);
-
-                const processFile = (file) => {
-                    if (!file.type.startsWith('image/')) return alert('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น');
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
-                            const MAX_SIZE = 800; // บีบอัดขนาดเพื่อลดภาระ Cloud
-                            if (width > height) {
-                                if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
-                            } else {
-                                if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-                            }
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // คุณภาพ 70%
-                            onChange(dataUrl);
-                        };
-                        img.src = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                };
-
-                useEffect(() => {
-                    const handleGlobalPaste = (e) => {
-                        const items = (e.clipboardData || window.clipboardData).items;
-                        for (let index in items) {
-                            const item = items[index];
-                            if (item.kind === 'file' && item.type.startsWith('image/')) {
-                                e.preventDefault();
-                                const blob = item.getAsFile();
-                                processFile(blob);
-                            }
-                        }
-                    };
-                    document.addEventListener('paste', handleGlobalPaste);
-                    return () => document.removeEventListener('paste', handleGlobalPaste);
-                }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-                return (
-                    <div className="flex flex-col gap-1 w-full mt-4">
-                        <label className="text-[12px] font-bold text-emerald-700 flex items-center gap-1.5 ml-0.5 mb-1">
-                            <ImageIcon size={14} className="text-emerald-500"/> {label}
-                        </label>
-                        <div 
-                            className="border-2 border-dashed border-emerald-300 bg-emerald-50 rounded-2xl p-4 text-center cursor-pointer hover:bg-emerald-100 transition-colors shadow-inner"
-                            onClick={() => fileInputRef.current.click()}
-                        >
-                            {value ? (
-                                <div className="relative inline-block group">
-                                    <img src={value} alt="Preview" className="max-h-40 rounded-xl shadow-md border border-emerald-200 mx-auto" />
-                                    <button type="button" onClick={(e) => { e.stopPropagation(); onChange(''); }} className="absolute -top-3 -right-3 bg-rose-500 text-white p-1.5 rounded-full shadow-lg hover:bg-rose-600 transition-all opacity-0 group-hover:opacity-100">
-                                        <X size={16}/>
-                                    </button>
-                                    <p className="text-[10px] text-emerald-600 font-bold mt-2">คลิกเพื่อเปลี่ยนรูป</p>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center gap-3 py-6">
-                                    <div className="bg-white p-4 rounded-full shadow-sm text-emerald-500">
-                                        <Plus size={24}/>
-                                    </div>
-                                    <p className="text-[14px] font-black text-emerald-800">คลิกเลือกรูป หรือ Ctrl+V วางรูป</p>
-                                    <p className="text-[11px] font-bold text-emerald-600/70">รองรับไฟล์ JPG, PNG</p>
-                                </div>
-                            )}
-                        </div>
-                        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={(e) => { if(e.target.files[0]) processFile(e.target.files[0]); }} />
-                    </div>
-                );
-            };
-
             const LoginView = ({ onLogin, error, loading }) => {
                 const [form, setForm] = useState({ username: '', password: '' });
                 const handleUsernameChange = (v) => setForm({...form, username: v.replace(/[^a-zA-Z0-9@._-]/g, '')});
@@ -289,10 +209,10 @@
                 const [searchQuery, setSearchQuery] = useState('');
                 const [filterDept, setFilterDept] = useState('ทั้งหมด');
                 const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-                const [isEditAssetMode, setIsEditAssetMode] = useState(false); // สถานะโหมดแก้ไข
+                const [isEditAssetMode, setIsEditAssetMode] = useState(false); 
                 const [addModalTab, setAddModalTab] = useState('general');
                 const [selectedAsset, setSelectedAsset] = useState(null);
-                const [historyModal, setHistoryModal] = useState({ open: false, type: '', data: {}, isEdit: false }); // เพิ่ม isEdit
+                const [historyModal, setHistoryModal] = useState({ open: false, type: '', data: {}, isEdit: false }); 
                 const [isUserModalOpen, setIsUserModalOpen] = useState(false);
                 const [userFormData, setUserFormData] = useState({ username: '', password: '', name: '', surname: '', position: '', department: 'ER', role: 'user' });
                 const [viewImageModal, setViewImageModal] = useState(null); 
@@ -350,14 +270,10 @@
                     e.preventDefault();
                     if(!form.username || !form.password) return;
                     setLoading(true);
-                    
                     const db = await fetchDatabase();
-                    
                     if (db.success) {
                         const cloudUsers = db.users;
-
                         const user = cloudUsers.find(u => String(u.username) === String(form.username) && String(u.password) === String(form.password));
-                        
                         if (user) {
                             setCurrentUserData(user);
                             setAlert({ message: `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ${user.name}`, type: "success" });
@@ -437,11 +353,9 @@
                     }
                     
                     setLoading(true);
-
-                    // 🔴 โหมดแก้ไขข้อมูลทั่วไป
                     if (isEditAssetMode) {
                         const updatedAsset = {
-                            ...selectedAsset, // ดึงข้อมูลเดิมมา (รวมถึงประวัติ)
+                            ...selectedAsset, 
                             id: assetFormData.id, name: assetFormData.name, model: assetFormData.model, serialNo: assetFormData.serialNo, manufacturer: assetFormData.manufacturer, vendor: assetFormData.vendor, technicianPhone: assetFormData.technicianPhone, department: assetFormData.department, receivedDate: assetFormData.receivedDate, warrantyExpire: assetFormData.warrantyExpire, lifespan: calculateLifespan(assetFormData.receivedDate), batteryChangeDate: assetFormData.batteryChangeDate, status: assetFormData.status
                         };
                         try {
@@ -456,7 +370,6 @@
                         } catch(err) { setAlert({ message: err.message, type: "error" }); } 
                         finally { setLoading(false); setTimeout(() => setAlert(null), 3000); }
                     } 
-                    // โหมดสร้างใหม่
                     else {
                         const newAsset = {
                             docId: Date.now().toString(), createdAt: new Date().toISOString(), recordedBy: `${currentUserData.name} ${currentUserData.surname}`,
@@ -486,8 +399,6 @@
                     if(!assetToUpdate) return;
                     setLoading(true);
                     let updatedAsset = { ...assetToUpdate };
-                    
-                    // 🔴 โหมดแก้ไขประวัติ
                     if (historyModal.isEdit) {
                         const updatedHistItem = { ...historyModal.data }; 
                         if (historyModal.type === 'repair') updatedAsset.repairHistory = updatedAsset.repairHistory.map(h => h.id === updatedHistItem.id ? updatedHistItem : h);
@@ -495,7 +406,6 @@
                         if (historyModal.type === 'cal') updatedAsset.calHistory = updatedAsset.calHistory.map(h => h.id === updatedHistItem.id ? updatedHistItem : h);
                         if (historyModal.type === 'loan') updatedAsset.loanHistory = updatedAsset.loanHistory.map(h => h.id === updatedHistItem.id ? updatedHistItem : h);
                     } 
-                    // โหมดเพิ่มประวัติใหม่
                     else {
                         const newHist = { ...historyModal.data, id: Date.now(), recordedBy: `${currentUserData.name} ${currentUserData.surname}` };
                         if (historyModal.type === 'repair') updatedAsset.repairHistory = [newHist, ...(updatedAsset.repairHistory || [])];
@@ -718,7 +628,6 @@
                                             </div>
                                         </div>
                                     )}
-
                                 </div>
                             ) : view === 'dashboard' ? (
                                 <div className="space-y-6 animate-fade-in py-4">
@@ -805,7 +714,7 @@
                                                 <Stethoscope size={200}/>
                                             </div>
                                             <div className="bg-white p-3 rounded-3xl shadow-2xl rotate-3 relative z-10">
-                                                <img src={`https://quickchart.io/qr?size=200x200&text=${encodeURIComponent(GAS_URL + "?viewAsset=" + selectedAsset.id)}`} className="w-24 h-24 md:w-28 md:h-28" alt="QR Code" />
+                                                <img src={`https://quickchart.io/qr?size=200x200&ecLevel=L&text=${encodeURIComponent(GAS_URL + "?viewAsset=" + selectedAsset.id)}`} className="w-24 h-24 md:w-28 md:h-28" alt="QR Code" />
                                             </div>
                                             <div className="text-center md:text-left flex-1 relative z-10">
                                                 <div className="flex gap-2 mb-3 items-center justify-center md:justify-start">
@@ -831,7 +740,6 @@
                                             <section>
                                                 <h3 className="text-lg font-black text-blue-600 uppercase border-b-4 border-blue-50 pb-3 mb-6 flex justify-between items-center">
                                                     <span className="flex items-center gap-2"><FileText size={24}/> ข้อมูลทั่วไป</span>
-                                                    {/* 🔴 ปุ่มแก้ไขข้อมูลทั่วไป */}
                                                     <button onClick={() => { setIsEditAssetMode(true); setAssetFormData(selectedAsset); setAddModalTab('general'); setIsAddModalOpen(true); }} className="bg-blue-50 text-blue-600 p-2 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95">
                                                         <Edit size={20}/>
                                                     </button>
@@ -880,7 +788,6 @@
                                                 <div className="space-y-3">
                                                     {(selectedAsset.repairHistory || []).map(h => (
                                                         <div key={h.id} className="bg-white p-5 rounded-2xl border border-slate-200 grid grid-cols-2 md:grid-cols-7 gap-4 text-[13px] shadow-sm relative group hover:border-blue-300 transition-colors pr-10">
-                                                            {/* 🔴 ปุ่มแก้ไขประวัติซ่อม */}
                                                             <button onClick={() => setHistoryModal({ open: true, type: 'repair', data: h, isEdit: true })} className="absolute top-3 right-3 p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
                                                                 <Edit size={16}/>
                                                             </button>
@@ -908,7 +815,6 @@
                                                 <div className="space-y-3">
                                                     {(selectedAsset.maintainHistory || []).map(h => (
                                                         <div key={h.id} className="bg-purple-50/30 p-5 rounded-2xl border border-purple-100 grid grid-cols-2 md:grid-cols-5 gap-4 text-[13px] shadow-sm relative group hover:border-purple-300 transition-colors pr-10">
-                                                            {/* 🔴 ปุ่มแก้ไขประวัติบำรุงรักษา */}
                                                             <button onClick={() => setHistoryModal({ open: true, type: 'maintain', data: h, isEdit: true })} className="absolute top-3 right-3 p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-purple-600 hover:text-white transition-all shadow-sm">
                                                                 <Edit size={16}/>
                                                             </button>
@@ -933,7 +839,6 @@
                                                 <div className="space-y-3">
                                                     {(selectedAsset.calHistory || []).map(h => (
                                                         <div key={h.id} className="bg-emerald-50/30 p-5 rounded-2xl border border-emerald-100 grid grid-cols-2 md:grid-cols-6 gap-4 text-[13px] items-center shadow-sm relative group hover:border-emerald-300 transition-colors pr-10">
-                                                            {/* 🔴 ปุ่มแก้ไขประวัติ Calibrate */}
                                                             <button onClick={() => setHistoryModal({ open: true, type: 'cal', data: h, isEdit: true })} className="absolute top-3 right-3 p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
                                                                 <Edit size={16}/>
                                                             </button>
@@ -969,7 +874,6 @@
                                                 <div className="space-y-3">
                                                     {(selectedAsset.loanHistory || []).map(h => (
                                                         <div key={h.id} className="bg-orange-50/30 p-5 rounded-2xl border border-orange-100 grid grid-cols-2 md:grid-cols-6 gap-4 text-[13px] items-center shadow-sm relative group hover:border-orange-300 transition-colors pr-10">
-                                                            {/* 🔴 ปุ่มแก้ไขประวัติยืม-คืน */}
                                                             <button onClick={() => setHistoryModal({ open: true, type: 'loan', data: h, isEdit: true })} className="absolute top-3 right-3 p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-orange-600 hover:text-white transition-all shadow-sm">
                                                                 <Edit size={16}/>
                                                             </button>
@@ -1000,19 +904,19 @@
                                 </div>
                             ) : view === 'sticker' && selectedAsset ? (
                                 <div className="flex flex-col items-center justify-center p-10 min-h-[70vh] animate-fade-in">
-                                    <div id="sticker-to-print" className="bg-white p-3 border border-slate-400 w-[420px] h-[252px] flex font-sans text-black shadow-xl rounded-xl mb-10 transform scale-100 sm:scale-110 md:scale-125 transition-all">
-                                        <div className="w-[150px] flex flex-col items-center justify-center pr-3 border-r-2 border-slate-800 shrink-0">
-                                            <img src={`https://quickchart.io/qr?size=300x300&margin=0&text=${encodeURIComponent(GAS_URL + "?viewAsset=" + selectedAsset.id)}`} className="w-full h-auto" alt="QR Code" />
+                                    <div id="sticker-to-print" className="bg-white p-1 border border-slate-400 w-[2.22in] h-[1.31in] flex font-sans text-black shadow-xl mb-10 transition-all overflow-hidden shrink-0">
+                                        <div className="w-[60px] flex flex-col items-center justify-center pr-1 border-r border-slate-800 shrink-0">
+                                            <img src={`https://quickchart.io/qr?size=200x200&ecLevel=L&margin=0&text=${encodeURIComponent(GAS_URL + "?viewAsset=" + selectedAsset.id)}`} className="w-full h-auto" alt="QR Code" />
                                         </div>
-                                        <div className="flex-1 pl-4 flex flex-col justify-between py-0.5 text-left overflow-hidden">
+                                        <div className="flex-1 pl-1.5 flex flex-col justify-between py-0.5 text-left overflow-hidden">
                                             <div>
-                                                <div className="font-black text-[26px] leading-tight mb-1 uppercase text-black line-clamp-2">{selectedAsset.name}</div>
-                                                <div className="text-[18px] leading-tight font-bold text-slate-800">{selectedAsset.department}</div>
+                                                <div className="font-black text-[18px] leading-[1] mb-1 uppercase text-black line-clamp-1">{selectedAsset.name}</div>
+                                                <div className="text-[15px] leading-[1] font-bold text-slate-800 line-clamp-1">{selectedAsset.department}</div>
                                             </div>
-                                            <div className="flex justify-end items-end mt-auto pb-1">
-                                                <div className="whitespace-nowrap font-black text-black text-[36px] leading-none tracking-tighter">ID: {selectedAsset.id}</div>
+                                            <div className="flex justify-end items-end mt-auto">
+                                                <div className="whitespace-nowrap font-black text-black text-[13px] leading-none tracking-tighter">ID: {selectedAsset.id}</div>
                                             </div>
-                                            <div className="text-[14px] font-black border-t-2 border-slate-800 pt-1.5 uppercase text-black flex justify-between tracking-tight">
+                                            <div className="text-[13px] font-black border-t border-slate-800 pt-0.5 uppercase text-black flex justify-between tracking-tighter leading-none mt-0.5">
                                                 <span>รับ: {formatToThaiDate(selectedAsset.receivedDate)}</span>
                                                 <span>ประกัน: {formatToThaiDate(selectedAsset.warrantyExpire)}</span>
                                             </div>
@@ -1027,11 +931,11 @@
                                             ย้อนกลับ
                                         </button>
                                     </div>
+                                    <p className="mt-4 text-[12px] text-slate-400 font-bold uppercase tracking-widest">ขนาดพิมพ์จริง: 2.22" x 1.31"</p>
                                 </div>
                             ) : null}
                         </div>
 
-                        {/* Modals Data Entry */}
                         {isAddModalOpen && (
                             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 md:p-6">
                                 <div className="bg-white w-full max-w-5xl rounded-[2.5rem] shadow-2xl border border-slate-300 overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
@@ -1045,7 +949,6 @@
                                         </button>
                                     </div>
                                     
-                                    {/* 🔴 ซ่อนแท็บประวัติ ถ้าเป็นการเปิดเข้ามาเพื่อ "แก้ไขข้อมูลทั่วไป" */}
                                     {!isEditAssetMode && (
                                         <div className="flex bg-slate-100 px-6 pt-4 gap-2 border-b border-slate-200 shrink-0 overflow-x-auto no-scrollbar">
                                             {[
@@ -1070,20 +973,15 @@
                                                     <InputField label="ชื่อเครื่องมือแพทย์ *" value={assetFormData.name} onChange={v => setAssetFormData({...assetFormData, name: v})} icon={<Tag size={14} className="text-blue-500"/>} />
                                                     <InputField label="ยี่ห้อ/รุ่น/ขนาด" value={assetFormData.model} onChange={v => setAssetFormData({...assetFormData, model: v})} icon={<Box size={14} className="text-blue-500"/>} />
                                                     <InputField label="Serial No." value={assetFormData.serialNo} onChange={v => setAssetFormData({...assetFormData, serialNo: v})} icon={<Hash size={14} className="text-blue-500"/>} />
-                                                    
                                                     <InputField label="ผู้ผลิต" value={assetFormData.manufacturer} onChange={v => setAssetFormData({...assetFormData, manufacturer: v})} icon={<Building2 size={14} className="text-blue-500"/>} />
                                                     <InputField label="ผู้จำหน่าย" value={assetFormData.vendor} onChange={v => setAssetFormData({...assetFormData, vendor: v})} icon={<Building2 size={14} className="text-blue-500"/>} />
                                                     <InputField label="เบอร์ช่างติดต่อ" value={assetFormData.technicianPhone} onChange={v => setAssetFormData({...assetFormData, technicianPhone: v})} icon={<Phone size={14} className="text-blue-500"/>} />
-                                                    
                                                     <InputField label="แผนกที่รับผิดชอบ" value={assetFormData.department} options={DEPARTMENTS} onChange={v => setAssetFormData({...assetFormData, department: v})} icon={<MapPin size={14} className="text-blue-500"/>} />
-                                                    
                                                     <div className="col-span-1 md:col-span-2 border-t border-slate-100 my-2 pt-4"></div>
-                                                    
                                                     <InputField label="วันที่รับเครื่อง" type="date" value={assetFormData.receivedDate} onChange={v => setAssetFormData({...assetFormData, receivedDate: v})} icon={<Calendar size={14} className="text-emerald-500"/>} />
                                                     <InputField label="วันหมดประกัน" type="date" value={assetFormData.warrantyExpire} onChange={v => setAssetFormData({...assetFormData, warrantyExpire: v})} icon={<ShieldCheck size={14} className="text-emerald-500"/>} />
                                                     <InputField label="อายุการใช้งาน (Auto)" value={assetFormData.lifespan} onChange={v => setAssetFormData({...assetFormData, lifespan: v})} icon={<Clock size={14} className="text-emerald-500"/>} />
                                                     <InputField label="วันเปลี่ยนแบตเตอรี่ล่าสุด" type="date" value={assetFormData.batteryChangeDate} onChange={v => setAssetFormData({...assetFormData, batteryChangeDate: v})} icon={<Battery size={14} className="text-emerald-500"/>} />
-                                                    
                                                     <div className="col-span-1 md:col-span-2">
                                                         <InputField label="สถานะปัจจุบัน" value={assetFormData.status} options={STATUS_OPTIONS} onChange={v => setAssetFormData({...assetFormData, status: v})} icon={<Activity size={14} className="text-blue-500"/>} />
                                                     </div>
@@ -1115,7 +1013,6 @@
                                                     <InputField label="ผลการ CAL" value={assetFormData.calResult} onChange={v => setAssetFormData({...assetFormData, calResult: v})} icon={<CircleCheck size={14} className="text-emerald-500"/>} />
                                                     <InputField label="ผู้ดำเนินการ" value={assetFormData.calBy} onChange={v => setAssetFormData({...assetFormData, calBy: v})} icon={<User size={14} className="text-emerald-500"/>} />
                                                     <InputField label="Due Date (ครั้งต่อไป)" type="date" value={assetFormData.calDue} onChange={v => setAssetFormData({...assetFormData, calDue: v})} icon={<CalendarClock size={14} className="text-emerald-500"/>} />
-                                                    <ImageUploadField label="แนบรูปใบ Cer (รองรับการวาง Ctrl+V)" value={assetFormData.calCerUrl} onChange={v => setAssetFormData({...assetFormData, calCerUrl: v})} />
                                                 </div>
                                             )}
                                             {addModalTab === 'loan' && (
@@ -1139,7 +1036,6 @@
                             </div>
                         )}
 
-                        {/* Modal เพิ่ม/แก้ไข ประวัติภายหลัง */}
                         {historyModal.open && (
                             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
                                 <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl border border-slate-300 animate-fade-in overflow-hidden relative max-h-[90vh] flex flex-col">
@@ -1147,7 +1043,6 @@
                                     <h2 className="text-lg font-black uppercase mb-6 flex justify-between items-center text-slate-800 shrink-0">
                                         <span className="flex items-center gap-2">
                                             {historyModal.type === 'repair' ? <Wrench className="text-blue-600"/> : historyModal.type === 'maintain' ? <Settings className="text-purple-600"/> : historyModal.type === 'cal' ? <Activity className="text-emerald-600"/> : <ArrowLeftRight className="text-orange-600"/>}
-                                            {/* 🔴 เปลี่ยนหัวข้อตามโหมด แก้ไข หรือ เพิ่มใหม่ */}
                                             {historyModal.isEdit ? 'แก้ไขข้อมูล' : 'เพิ่มข้อมูล'}{historyModal.type === 'repair' ? 'การซ่อม' : historyModal.type === 'maintain' ? 'การบำรุงรักษา' : historyModal.type === 'cal' ? 'การสอบเทียบ' : 'การยืม-คืน'}
                                         </span>
                                         <button onClick={() => setHistoryModal({ open: false, type: '', data: {}, isEdit: false })} className="text-slate-400 hover:text-slate-800">
@@ -1182,8 +1077,6 @@
                                                     <InputField label="ผลการ CAL" value={historyModal.data.result || ''} icon={<CircleCheck size={14} className="text-emerald-500"/>} onChange={v => setHistoryModal({...historyModal, data: {...historyModal.data, result: v}})} />
                                                     <InputField label="ผู้ดำเนินการ" value={historyModal.data.by || ''} icon={<User size={14} className="text-emerald-500"/>} onChange={v => setHistoryModal({...historyModal, data: {...historyModal.data, by: v}})} />
                                                     <InputField label="Due Date" type="date" value={historyModal.data.due || ''} icon={<CalendarClock size={14} className="text-emerald-500"/>} onChange={v => setHistoryModal({...historyModal, data: {...historyModal.data, due: v}})} />
-                                                    
-                                                    <ImageUploadField label="แนบรูปใบ Cer (รองรับการวาง Ctrl+V)" value={historyModal.data.cerUrl || ''} onChange={v => setHistoryModal({...historyModal, data: {...historyModal.data, cerUrl: v}})} />
                                                 </>
                                             )}
                                             {historyModal.type === 'loan' && (
@@ -1204,7 +1097,6 @@
                             </div>
                         )}
 
-                        {/* Modal สำหรับกดดูรูปใบ Cer แบบเต็มจอ */}
                         {viewImageModal && (
                             <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setViewImageModal(null)}>
                                 <button className="absolute top-4 right-4 md:top-8 md:right-8 text-white bg-white/20 p-3 rounded-full hover:bg-rose-500 hover:text-white transition-all shadow-lg" onClick={(e) => { e.stopPropagation(); setViewImageModal(null); }}>
