@@ -298,9 +298,14 @@
                     const res = await sendToDatabase(action, payload);
                     
                     if(res.status === "success") { 
-                        await fetchDatabase();
                         if (isEditAssetMode) {
+                            // อัปเดตรายการในหน้าหลัก (Dashboard) ทันที
+                            setAssets(prev => prev.map(a => a.docId === payload.docId ? payload : a));
+                            // อัปเดตข้อมูลที่แสดงในหน้า Profile
                             setSelectedAsset(payload);
+                        } else {
+                            // สำหรับการเพิ่มข้อมูลใหม่ ให้โหลดใหม่ทั้งหมด
+                            await fetchDatabase();
                         }
                         setIsAddModalOpen(false); 
                     } else {
@@ -320,6 +325,7 @@
                     const res = await sendToDatabase("updateAsset", updated);
                     if(res.status === "success") { 
                         setSelectedAsset(updated); 
+                        setAssets(prev => prev.map(a => a.docId === updated.docId ? updated : a));
                         setHistoryModal({ open: false, type: '', data: {}, isEdit: false }); 
                         fetchDatabase(); 
                     }
@@ -335,6 +341,7 @@
                     const res = await sendToDatabase("updateAsset", updated);
                     if (res.status === "success") {
                         setSelectedAsset(updated);
+                        setAssets(prev => prev.map(a => a.docId === updated.docId ? updated : a));
                         fetchDatabase();
                     }
                 };
