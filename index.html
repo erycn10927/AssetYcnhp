@@ -210,7 +210,6 @@
                 };
                 const [assetFormData, setAssetFormData] = useState(initialFormState);
 
-                // สถิติสำหรับ Dashboard
                 const stats = useMemo(() => {
                     return {
                         total: assets.length,
@@ -276,10 +275,37 @@
 
                 const handleAddAsset = async (e) => {
                     e.preventDefault();
-                    const res = isEditAssetMode ? 
-                        await sendToDatabase("updateAsset", { ...selectedAsset, ...assetFormData, lifespan: calculateLifespan(assetFormData.receivedDate) }) :
-                        await sendToDatabase("addAsset", { ...assetFormData, docId: Date.now().toString(), createdAt: new Date().toISOString(), recordedBy: currentUserData.name, lifespan: calculateLifespan(assetFormData.receivedDate), repairHistory: [], maintainHistory: [], calHistory: [], loanHistory: [] });
-                    if(res.status === "success") { fetchDatabase(); setIsAddModalOpen(false); }
+                    
+                    const finalData = { 
+                        ...assetFormData, 
+                        lifespan: calculateLifespan(assetFormData.receivedDate) 
+                    };
+                    
+                    const action = isEditAssetMode ? "updateAsset" : "addAsset";
+                    const payload = isEditAssetMode ? 
+                        { ...selectedAsset, ...finalData } :
+                        { 
+                            ...finalData, 
+                            docId: Date.now().toString(), 
+                            createdAt: new Date().toISOString(), 
+                            recordedBy: `${currentUserData.name} ${currentUserData.surname}`, 
+                            repairHistory: [], 
+                            maintainHistory: [], 
+                            calHistory: [], 
+                            loanHistory: [] 
+                        };
+
+                    const res = await sendToDatabase(action, payload);
+                    
+                    if(res.status === "success") { 
+                        await fetchDatabase();
+                        if (isEditAssetMode) {
+                            setSelectedAsset(payload);
+                        }
+                        setIsAddModalOpen(false); 
+                    } else {
+                        console.error("บันทึกไม่สำเร็จ:", res.message);
+                    }
                 };
 
                 const handleAddHistory = async (e) => {
@@ -292,7 +318,25 @@
                         updated[type] = [{ ...historyModal.data, id: Date.now(), recordedBy: `${currentUserData.name} ${currentUserData.surname}` }, ...(updated[type] || [])];
                     }
                     const res = await sendToDatabase("updateAsset", updated);
-                    if(res.status === "success") { setSelectedAsset(updated); setHistoryModal({ open: false, type: '', data: {}, isEdit: false }); fetchDatabase(); }
+                    if(res.status === "success") { 
+                        setSelectedAsset(updated); 
+                        setHistoryModal({ open: false, type: '', data: {}, isEdit: false }); 
+                        fetchDatabase(); 
+                    }
+                };
+
+                const handleDeleteHistory = async (type, historyId) => {
+                    if (!window.confirm("ยืนยันการลบประวัตินี้ถาวร?")) return;
+                    
+                    const updated = { ...selectedAsset };
+                    const historyType = `${type}History`;
+                    updated[historyType] = (updated[historyType] || []).filter(h => h.id !== historyId);
+                    
+                    const res = await sendToDatabase("updateAsset", updated);
+                    if (res.status === "success") {
+                        setSelectedAsset(updated);
+                        fetchDatabase();
+                    }
                 };
 
                 const saveStickerAsJpg = () => {
@@ -342,8 +386,13 @@
                         <div className="max-w-6xl mx-auto px-4 pt-4 space-y-3">
                             <header className="flex flex-col md:flex-row justify-between items-center gap-2 py-2 border-b border-slate-300 no-print">
                                 <div className="flex items-center gap-3">
-                                    <div className="bg-blue-600 p-2 rounded-lg text-white shadow-md"><Icon name="cloud" size={20} /></div>
-                                    <div><h1 className="text-lg font-black text-slate-800 uppercase leading-none">ระบบทะเบียนเครื่องมือแพทย์</h1><p className="text-[11px] font-bold text-blue-600 mt-1 uppercase tracking-wider">รพ.ยางชุมน้อย จังหวัดศรีสะเกษ</p></div>
+                                    <div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-md relative">
+                                        <Icon name="cloud" size={24} className="relative z-10" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-lg font-black text-slate-800 uppercase leading-none">ระบบทะเบียนเครื่องมือแพทย์</h1>
+                                        <p className="text-[11px] font-bold text-blue-600 mt-1 uppercase tracking-wider">รพ.ยางชุมน้อย จังหวัดศรีสะเกษ</p>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 flex items-center gap-3 shadow-sm">
@@ -502,7 +551,6 @@
                                         </div>
 
                                         <div className="p-8 md:p-12 space-y-16">
-                                            {/* เพิ่มขนาดตัวอักษรในทุกหัวข้อและข้อมูลย่อย */}
                                             <section>
                                                 <h3 className="text-xl md:text-2xl font-black text-blue-600 uppercase border-b-4 border-blue-50 pb-3 mb-6 flex justify-between items-center">
                                                     <span className="flex items-center gap-2"><Icon name="file-text" size={24}/> ข้อมูลทั่วไป</span>
@@ -527,7 +575,6 @@
                                                         { label: 'สถานะปัจจุบัน', val: selectedAsset.status }
                                                     ].map((item, i) => (
                                                         <div key={i} className={item.label === 'สถานะปัจจุบัน' ? 'col-span-2 md:col-span-4 border-t border-slate-200 pt-4' : ''}>
-                                                            {/* ขยายขนาดหัวข้อย่อยเป็น text-[14px] หรือ text-base */}
                                                             <p className="text-[14px] md:text-[15px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{item.label}</p>
                                                             {item.label === 'สถานะปัจจุบัน' ? (
                                                                 <div className="inline-block scale-110 origin-left"><StatusBadge status={item.val} /></div>
@@ -555,9 +602,14 @@
                                                 <div className="space-y-4">
                                                     {(selectedAsset.repairHistory || []).map(h => (
                                                         <div key={h.id} className="bg-white p-6 rounded-2xl border border-slate-200 grid grid-cols-2 md:grid-cols-7 gap-6 text-[15px] shadow-sm relative group hover:border-blue-300 transition-colors pr-10">
-                                                            <button onClick={() => setHistoryModal({ open: true, type: 'repair', data: h, isEdit: true })} className="absolute top-3 right-3 p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
-                                                                <Icon name="edit" size={16}/>
-                                                            </button>
+                                                            <div className="absolute top-3 right-3 flex flex-col gap-2">
+                                                                <button onClick={() => setHistoryModal({ open: true, type: 'repair', data: h, isEdit: true })} className="p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+                                                                    <Icon name="edit" size={16}/>
+                                                                </button>
+                                                                <button onClick={() => handleDeleteHistory('repair', h.id)} className="p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all shadow-sm">
+                                                                    <Icon name="trash-2" size={16}/>
+                                                                </button>
+                                                            </div>
                                                             <div><p className="text-[11px] text-slate-400 font-black uppercase tracking-widest mb-1">วันที่ซ่อม</p><b className="text-[16px]">{formatToThaiDate(h.date)}</b></div>
                                                             <div><p className="text-[11px] text-slate-400 font-black uppercase tracking-widest mb-1">อาการ</p><b className="text-[16px]">{h.symptom || "-"}</b></div>
                                                             <div><p className="text-[11px] text-slate-400 font-black uppercase tracking-widest mb-1">วิธีแก้ไข</p><b className="text-[16px]">{h.fix || "-"}</b></div>
@@ -582,9 +634,14 @@
                                                 <div className="space-y-4">
                                                     {(selectedAsset.maintainHistory || []).map(h => (
                                                         <div key={h.id} className="bg-purple-50/30 p-6 rounded-2xl border border-purple-100 grid grid-cols-2 md:grid-cols-5 gap-6 text-[15px] shadow-sm relative group hover:border-purple-300 transition-colors pr-10">
-                                                            <button onClick={() => setHistoryModal({ open: true, type: 'maintain', data: h, isEdit: true })} className="absolute top-3 right-3 p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-purple-600 hover:text-white transition-all shadow-sm">
-                                                                <Icon name="edit" size={16}/>
-                                                            </button>
+                                                            <div className="absolute top-3 right-3 flex flex-col gap-2">
+                                                                <button onClick={() => setHistoryModal({ open: true, type: 'maintain', data: h, isEdit: true })} className="p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-purple-600 hover:text-white transition-all shadow-sm">
+                                                                    <Icon name="edit" size={16}/>
+                                                                </button>
+                                                                <button onClick={() => handleDeleteHistory('maintain', h.id)} className="p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all shadow-sm">
+                                                                    <Icon name="trash-2" size={16}/>
+                                                                </button>
+                                                            </div>
                                                             <div><p className="text-[11px] text-purple-600 font-black uppercase tracking-widest mb-1">วันที่บำรุงรักษา</p><b className="text-[16px] text-slate-800">{formatToThaiDate(h.date)}</b></div>
                                                             <div className="md:col-span-2"><p className="text-[11px] text-purple-600 font-black uppercase tracking-widest mb-1">รายละเอียด</p><b className="text-[16px] text-slate-800">{h.detail || "-"}</b></div>
                                                             <div><p className="text-[11px] text-purple-600 font-black uppercase tracking-widest mb-1">ผู้ดำเนินการ</p><b className="text-[16px] text-slate-800">{h.by || "-"}</b></div>
@@ -606,9 +663,14 @@
                                                 <div className="space-y-4">
                                                     {(selectedAsset.calHistory || []).map(h => (
                                                         <div key={h.id} className="bg-emerald-50/30 p-6 rounded-2xl border border-emerald-100 grid grid-cols-2 md:grid-cols-6 gap-6 text-[15px] items-center shadow-sm relative group hover:border-emerald-300 transition-colors pr-10">
-                                                            <button onClick={() => setHistoryModal({ open: true, type: 'cal', data: h, isEdit: true })} className="absolute top-3 right-3 p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
-                                                                <Icon name="edit" size={16}/>
-                                                            </button>
+                                                            <div className="absolute top-3 right-3 flex flex-col gap-2">
+                                                                <button onClick={() => setHistoryModal({ open: true, type: 'cal', data: h, isEdit: true })} className="p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                                                                    <Icon name="edit" size={16}/>
+                                                                </button>
+                                                                <button onClick={() => handleDeleteHistory('cal', h.id)} className="p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all shadow-sm">
+                                                                    <Icon name="trash-2" size={16}/>
+                                                                </button>
+                                                            </div>
                                                             <div><p className="text-[11px] text-emerald-600 font-black uppercase tracking-widest mb-1">CAL Date</p><b className="text-[16px] text-slate-800">{formatToThaiDate(h.date)}</b></div>
                                                             <div><p className="text-[11px] text-emerald-600 font-black uppercase tracking-widest mb-1">ผลการ CAL</p><b className="text-[16px] text-slate-800">{h.result || "-"}</b></div>
                                                             <div><p className="text-[11px] text-emerald-600 font-black uppercase tracking-widest mb-1">ผู้ดำเนินการ</p><b className="text-[16px] text-slate-800">{h.by || "-"}</b></div>
@@ -641,9 +703,14 @@
                                                 <div className="space-y-4">
                                                     {(selectedAsset.loanHistory || []).map(h => (
                                                         <div key={h.id} className="bg-orange-50/30 p-6 rounded-2xl border border-orange-100 grid grid-cols-2 md:grid-cols-6 gap-6 text-[15px] items-center shadow-sm relative group hover:border-orange-300 transition-colors pr-10">
-                                                            <button onClick={() => setHistoryModal({ open: true, type: 'loan', data: h, isEdit: true })} className="absolute top-3 right-3 p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-orange-600 hover:text-white transition-all shadow-sm">
-                                                                <Icon name="edit" size={16}/>
-                                                            </button>
+                                                            <div className="absolute top-3 right-3 flex flex-col gap-2">
+                                                                <button onClick={() => setHistoryModal({ open: true, type: 'loan', data: h, isEdit: true })} className="p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-orange-600 hover:text-white transition-all shadow-sm">
+                                                                    <Icon name="edit" size={16}/>
+                                                                </button>
+                                                                <button onClick={() => handleDeleteHistory('loan', h.id)} className="p-1.5 bg-slate-100 text-slate-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all shadow-sm">
+                                                                    <Icon name="trash-2" size={16}/>
+                                                                </button>
+                                                            </div>
                                                             <div><p className="text-[11px] text-orange-600 font-black uppercase tracking-widest mb-1">วันที่ยืม</p><b className="text-[16px] text-slate-800">{formatToThaiDate(h.date)}</b></div>
                                                             <div><p className="text-[11px] text-orange-600 font-black uppercase tracking-widest mb-1">รายการ</p><b className="text-[16px] text-slate-800">{h.item || "-"}</b></div>
                                                             <div><p className="text-[11px] text-orange-600 font-black uppercase tracking-widest mb-1">ผู้ยืม</p><b className="text-[16px] text-slate-800">{h.name || "-"}</b></div>
@@ -699,7 +766,6 @@
                             ) : null}
                         </div>
 
-                        {/* Modals อื่นๆ ยังคงเดิม */}
                         {isAddModalOpen && (
                             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
                                 <div className="bg-white w-full max-w-3xl rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
@@ -809,7 +875,7 @@
                                                     <InputField label="สถานะ" options={["ยังไม่คืน", "คืนแล้ว"]} value={historyModal.data.status || 'ยังไม่คืน'} onChange={v => setHistoryModal({...historyModal, data: {...historyModal.data, status: v}})} />
                                                 </>
                                             )}
-                                            <button className="w-full py-3 bg-slate-800 text-white rounded-2xl font-black uppercase mt-4 shadow-xl active:scale-95 text-md transition-all">บันทึกข้อมูล</button>
+                                            <button className="w-full py-3 bg-slate-800 text-white rounded-xl font-black uppercase mt-4 shadow-xl active:scale-95 text-md transition-all">บันทึกข้อมูล</button>
                                         </form>
                                     </div>
                                 </div>
