@@ -34,6 +34,65 @@
 
   * { margin:0; padding:0; box-sizing:border-box; }
 
+  /* ===== LOGIN PAGE ===== */
+  #loginPage {
+    position:fixed; inset:0; z-index:99999;
+    background:linear-gradient(135deg,#003F63 0%,#005B8E 50%,#0077B6 100%);
+    display:flex !important; align-items:center; justify-content:center;
+    font-family:'Sarabun','IBM Plex Sans Thai',sans-serif;
+    transition: opacity 0.2s;
+  }
+  #loginPage.hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+  }
+  #loginPage .login-box {
+    background:#fff; border-radius:20px; padding:40px 36px;
+    width:100%; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  }
+  #loginPage .login-logo {
+    text-align:center; margin-bottom:28px;
+  }
+  #loginPage .login-logo .icon {
+    width:64px; height:64px; background:linear-gradient(135deg,#005B8E,#00B4D8);
+    border-radius:16px; display:inline-flex; align-items:center; justify-content:center;
+    font-size:28px; margin-bottom:12px;
+  }
+  #loginPage .login-logo h1 {
+    font-size:18px; font-weight:700; color:#1A2F42; margin-bottom:4px;
+  }
+  #loginPage .login-logo p {
+    font-size:13px; color:#7A95A8;
+  }
+  #loginPage .form-field {
+    margin-bottom:16px;
+  }
+  #loginPage .form-field label {
+    display:block; font-size:13px; font-weight:600; color:#4A6274; margin-bottom:6px;
+  }
+  #loginPage .form-field input {
+    width:100%; padding:11px 14px; border:1.5px solid #C8D9E8;
+    border-radius:10px; font-size:14px; font-family:inherit;
+    outline:none; transition:border-color 0.2s;
+  }
+  #loginPage .form-field input:focus { border-color:#005B8E; }
+  #loginPage .login-btn {
+    width:100%; padding:13px; background:linear-gradient(135deg,#005B8E,#0077B6);
+    color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:700;
+    font-family:inherit; cursor:pointer; margin-top:8px; transition:opacity 0.2s;
+  }
+  #loginPage .login-btn:hover { opacity:0.9; }
+  #loginPage .login-error {
+    background:#FDECEA; color:#C0392B; border-radius:8px;
+    padding:10px 14px; font-size:13px; margin-bottom:16px;
+    display:none; text-align:center;
+  }
+  #loginPage .login-footer {
+    text-align:center; margin-top:20px; font-size:12px; color:#7A95A8;
+  }
+
   body {
     font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif;
     background: var(--bg);
@@ -591,6 +650,30 @@
 </head>
 <body>
 
+<!-- ===== LOGIN PAGE ===== -->
+<div id="loginPage">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">🏥</div>
+      <h1>ระบบจัดการเครื่องมือแพทย์</h1>
+      <p>โรงพยาบาลยางชุมน้อย จ.ศรีสะเกษ</p>
+    </div>
+    <div class="login-error" id="loginError">❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+    <div class="form-field">
+      <label>ชื่อผู้ใช้งาน</label>
+      <input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+    </div>
+    <div class="form-field">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">🔐 เข้าสู่ระบบ</button>
+    <div class="login-footer">สอบถามผู้ดูแลระบบเพื่อขอสิทธิ์เข้าใช้งาน</div>
+  </div>
+</div>
+
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -639,11 +722,12 @@
   </nav>
 
   <div class="sidebar-footer">
-    <div class="user-avatar">สม</div>
+    <div class="user-avatar" id="sidebarAvatar">--</div>
     <div class="user-info">
-      <div class="name">สมชาย ใจดี</div>
-      <div class="role">ช่างเทคนิคการแพทย์</div>
+      <div class="name" id="sidebarName">กำลังโหลด...</div>
+      <div class="role" id="sidebarRole">--</div>
     </div>
+    <button id="logoutBtn" onclick="doLogout()" title="ออกจากระบบ" style="background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;margin-left:auto;flex-shrink:0;position:relative;z-index:100000;">🚪</button>
   </div>
 </aside>
 
@@ -1487,17 +1571,13 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span>👥</span><h3>จัดการผู้ใช้งาน</h3></div>
-          <div class="card-body">
-            <table style="font-size:13px;">
-              <thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>สิทธิ์</th><th></th></tr></thead>
-              <tbody>
-                <tr><td>สมชาย ใจดี</td><td>ช่างเทคนิค</td><td><span class="badge badge-info">Admin</span></td><td><button class="icon-btn edit">✏️</button></td></tr>
-                <tr><td>น.ส.สุภาพ รักดี</td><td>พยาบาลวิชาชีพ</td><td><span class="badge badge-success">User</span></td><td><button class="icon-btn edit">✏️</button></td></tr>
-                <tr><td>นางรัตนา ดีงาม</td><td>พยาบาลวิชาชีพ</td><td><span class="badge badge-success">User</span></td><td><button class="icon-btn edit">✏️</button></td></tr>
-              </tbody>
-            </table>
-            <button class="btn btn-outline btn-sm" style="margin-top:12px;">➕ เพิ่มผู้ใช้</button>
+          <div class="card-header"><span>👥</span><h3>จัดการผู้ใช้งาน</h3>
+            <span style="font-size:11px;background:#FFF0DC;color:#A05A00;padding:3px 8px;border-radius:10px;font-weight:600;">🔒 เฉพาะ Admin</span>
+          </div>
+          <div class="card-body" id="userMgmtSection">
+            <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">
+              🔒 เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น
+            </div>
           </div>
         </div>
       </div>
@@ -2187,6 +2267,65 @@
   </div>
 </div>
 
+<!-- ===== ADD/EDIT USER MODAL ===== -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header" style="background:var(--primary);border-radius:12px 12px 0 0;">
+      <span style="font-size:18px;">👤</span>
+      <h3 style="color:#fff;" id="addUserTitle">เพิ่มผู้ใช้งาน</h3>
+      <button class="close-btn" onclick="closeModal('addUserModal')" style="background:rgba(255,255,255,0.15);color:#fff;">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <input type="hidden" id="editUserId">
+        <div class="form-group full"><label>ชื่อ-นามสกุล *</label><input id="uName" placeholder="เช่น นายสมชาย ใจดี"></div>
+        <div class="form-group"><label>ตำแหน่ง</label><input id="uRole" placeholder="เช่น ช่างเทคนิค"></div>
+        <div class="form-group"><label>สิทธิ์การใช้งาน</label>
+          <select id="uLevel">
+            <option value="user">User — ดูและบันทึกข้อมูล</option>
+            <option value="admin">Admin — จัดการทุกอย่าง</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Username *</label><input id="uUsername" placeholder="ชื่อที่ใช้ Login"></div>
+        <div class="form-group"><label>Password *</label><input type="password" id="uPassword" placeholder="รหัสผ่าน (เว้นว่างไม่เปลี่ยน)"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addUserModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveUser()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOGOUT CONFIRM MODAL ===== -->
+<div id="logoutModal" style="
+  display:none; position:fixed; inset:0; z-index:999999;
+  background:rgba(0,0,0,0.5); align-items:center; justify-content:center;
+">
+  <div style="
+    background:#fff; border-radius:16px; padding:32px 28px;
+    max-width:360px; width:90%; text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3); font-family:'Sarabun',sans-serif;
+  ">
+    <div style="font-size:48px; margin-bottom:12px;">🚪</div>
+    <div style="font-size:18px; font-weight:700; color:#1A2F42; margin-bottom:8px;">ออกจากระบบ?</div>
+    <div style="font-size:14px; color:#7A95A8; margin-bottom:24px;">คุณต้องการออกจากระบบใช่หรือไม่</div>
+    <div style="display:flex; gap:10px; justify-content:center;">
+      <button onclick="closeLogoutModal()" style="
+        flex:1; padding:11px; border:1.5px solid #C8D9E8; background:#fff;
+        border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;
+        font-family:'Sarabun',sans-serif; color:#4A6274;
+      ">ยกเลิก</button>
+      <button onclick="confirmLogout()" style="
+        flex:1; padding:11px; border:none;
+        background:linear-gradient(135deg,#C0392B,#E74C3C);
+        color:#fff; border-radius:10px; font-size:14px; font-weight:700;
+        cursor:pointer; font-family:'Sarabun',sans-serif;
+      ">🚪 ออกจากระบบ</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" style="
   position:fixed; bottom:24px; right:24px;
@@ -2488,6 +2627,42 @@ function filterByDept(dept) { renderEquipTable(dept ? equipmentData.filter(e=>e.
 function filterByStatus(status) { renderEquipTable(status ? equipmentData.filter(e=>e.status===status) : equipmentData); }
 
 // ===== QR CODE MODAL =====
+// แปลงวันที่ทุกรูปแบบ → dd/mm/ปีพ.ศ. สำหรับแสดงในสติ้กเกอร์
+function formatStickerDate(val) {
+  if (!val || val === '-' || val === '') return '-';
+
+  // ถ้าเป็น dd/mm/yyyy หรือ dd/mm/ปีพ.ศ. อยู่แล้ว → ดึงแค่วัน/เดือน/ปี
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(String(val).trim())) {
+    const parts = String(val).trim().split('/');
+    const d = parts[0].padStart(2,'0');
+    const m = parts[1].padStart(2,'0');
+    const y = parseInt(parts[2]);
+    // แปลงเป็น พ.ศ. ถ้ายังเป็น ค.ศ.
+    return d + '/' + m + '/' + (y < 2400 ? y + 543 : y);
+  }
+
+  // ถ้าเป็น ISO YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(String(val).trim())) {
+    const iso = String(val).trim().substring(0, 10);
+    const [y, m, d] = iso.split('-');
+    return d + '/' + m + '/' + (parseInt(y) + 543);
+  }
+
+  // ถ้าเป็น Date string (เช่น "Sat Apr 29 2569 00:00:00 GMT+0700")
+  // ดึงตัวเลขออกมา
+  const dateObj = new Date(val);
+  if (!isNaN(dateObj.getTime())) {
+    const d = String(dateObj.getDate()).padStart(2,'0');
+    const m = String(dateObj.getMonth()+1).padStart(2,'0');
+    const y = dateObj.getFullYear();
+    // ถ้าปีดูเหมือน ค.ศ. (น้อยกว่า 2400) ให้บวก 543
+    return d + '/' + m + '/' + (y < 2400 ? y + 543 : y);
+  }
+
+  // fallback
+  return String(val).split(' ')[0] || '-';
+}
+
 // ===== QR STICKER =====
 let _qrCurrentEquip = null;
 
@@ -2511,8 +2686,8 @@ function showQR(code) {
   document.getElementById('qrNameLabel').textContent = e.name;
   document.getElementById('qrCodeLabel').textContent = 'ID: ' + e.code;
   document.getElementById('qrDeptLabel').textContent = (e.dept || '').replace(/\s*\(.*?\)\s*/g,'').trim() || 'รพ.ยางชุมน้อย';
-  document.getElementById('qrReceiveLabel').textContent = e.receiveDate || '-';
-  document.getElementById('qrWarrantyLabel').textContent = e.warrantyEnd || '-';
+  document.getElementById('qrReceiveLabel').textContent = formatStickerDate(e.receiveDate);
+  document.getElementById('qrWarrantyLabel').textContent = formatStickerDate(e.warrantyEnd);
 
   // เนื้อหาใน QR — ถ้ามี GAS URL ใช้ URL (มือถือสแกนแล้วเปิดเว็บได้เลย)
   // ถ้าไม่มี ใช้ข้อความสั้น
@@ -3916,7 +4091,7 @@ syncAllCalibToHistory();
 //  GOOGLE SHEETS INTEGRATION
 //  วาง URL ของ Web App ที่ Deploy แล้วตรงนี้
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwK9O-sKwrQwCYc9acrbnanVPgPtRFpNEpvLEmR5MzSEgmWPAPXrToSYtlFJZzgD3Qf/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJeRvUsXQlQSr3TPkXddIyEOlOb1hLxCApuk9ukrqszRPOzHPhNrL0Fr-wIm_gpLvbDw/exec';
 
 // สถานะการเชื่อมต่อ
 let gasConnected = false;
@@ -4214,16 +4389,248 @@ function executeClearData() {
   }
 }
 
-// อัปเดต count ทุกครั้งที่เข้าหน้าตั้งค่า (patch showPage)
+// อัปเดต count ทุกครั้งที่เข้าหน้าตั้งค่า
 const _origShowPage = showPage;
 showPage = function(id) {
   _origShowPage(id);
-  if (id === 'settings') setTimeout(updateSettingsCounts, 150);
+  if (id === 'settings') {
+    setTimeout(() => { updateSettingsCounts(); renderUserMgmt(); }, 150);
+  }
 };
+
+
+// ===== AUTH SYSTEM =====
+// ฐานข้อมูลผู้ใช้ (เก็บใน localStorage เพื่อคงอยู่หลัง refresh)
+function getUsers() {
+  const stored = localStorage.getItem('ymn_users');
+  if (stored) return JSON.parse(stored);
+  // default users
+  const defaults = [
+    { id:'u1', name:'ผู้ดูแลระบบ', role:'ผู้ดูแลระบบ', level:'admin', username:'admin', password:'1234' },
+  ];
+  localStorage.setItem('ymn_users', JSON.stringify(defaults));
+  return defaults;
+}
+
+function saveUsers(users) {
+  localStorage.setItem('ymn_users', JSON.stringify(users));
+}
+
+let currentUser = null;
+
+function doLogin() {
+  const username = (document.getElementById('loginUser').value || '').trim();
+  const password = document.getElementById('loginPass').value || '';
+  const errEl = document.getElementById('loginError');
+
+  if (!username || !password) {
+    errEl.style.display = 'block';
+    errEl.textContent = '❌ กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';
+    return;
+  }
+
+  const users = getUsers();
+  const user = users.find(function(u) { return u.username === username && u.password === password; });
+
+  if (!user) {
+    errEl.style.display = 'block';
+    errEl.textContent = '❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+    return;
+  }
+
+  currentUser = user;
+  sessionStorage.setItem('ymn_session', JSON.stringify({
+    id: user.id, username: user.username,
+    level: user.level, name: user.name, role: user.role
+  }));
+
+  document.getElementById('loginPage').classList.add('hidden');
+  updateSidebarUser();
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  errEl.style.display = 'none';
+  // render userMgmt ถ้าอยู่ที่หน้า settings
+  setTimeout(function() { if (document.getElementById('userMgmtSection')) renderUserMgmt(); }, 200);
+  showToast('✅ ยินดีต้อนรับ ' + user.name);
+}
+
+function doLogout() {
+  const m = document.getElementById('logoutModal');
+  m.style.display = 'flex';
+}
+
+function closeLogoutModal() {
+  document.getElementById('logoutModal').style.display = 'none';
+}
+
+function confirmLogout() {
+  document.getElementById('logoutModal').style.display = 'none';
+  currentUser = null;
+  sessionStorage.removeItem('ymn_session');
+  const lp = document.getElementById('loginPage');
+  lp.classList.remove('hidden');
+  setTimeout(function() {
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('loginUser').focus();
+  }, 50);
+}
+
+function updateSidebarUser() {
+  if (!currentUser) return;
+  const avatar = currentUser.name.replace(/^(นาย|นาง|น\.ส\.|นางสาว|ดร\.|พ\.ญ\.|นพ\.)\s*/,'').substring(0,2);
+  document.getElementById('sidebarAvatar').textContent = avatar;
+  document.getElementById('sidebarName').textContent = currentUser.name;
+  document.getElementById('sidebarRole').textContent = currentUser.role + (currentUser.level === 'admin' ? ' 👑' : '');
+}
+
+function checkSession() {
+  const sess = sessionStorage.getItem('ymn_session');
+  const lp = document.getElementById('loginPage');
+  if (sess) {
+    try {
+      const parsed = JSON.parse(sess);
+      const users = getUsers();
+      const found = users.find(function(u) { return u.id === parsed.id && u.username === parsed.username; });
+      if (found) {
+        currentUser = found;
+        lp.classList.add('hidden');
+        updateSidebarUser();
+        setTimeout(function() { if (document.getElementById('userMgmtSection')) renderUserMgmt(); }, 300);
+      } else {
+        currentUser = null;
+        sessionStorage.removeItem('ymn_session');
+        lp.classList.remove('hidden');
+        setTimeout(function() { document.getElementById('loginUser').focus(); }, 100);
+      }
+    } catch(e) {
+      currentUser = null;
+      lp.classList.remove('hidden');
+    }
+  } else {
+    currentUser = null;
+    lp.classList.remove('hidden');
+    setTimeout(function() { document.getElementById('loginUser').focus(); }, 100);
+  }
+}
+
+// ===== USER MANAGEMENT (Admin only) =====
+function renderUserMgmt() {
+  const section = document.getElementById('userMgmtSection');
+  if (!section) return;
+
+  // ตรวจสอบจาก currentUser โดยตรง
+  const isAdmin = currentUser && currentUser.level === 'admin';
+
+  if (!isAdmin) {
+    section.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">🔒 เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น</div>';
+    return;
+  }
+
+  const users = getUsers();
+  const rows = users.map(function(u) {
+    return '<tr>' +
+      '<td><strong>' + u.name + '</strong></td>' +
+      '<td style="color:var(--text2);">' + u.role + '</td>' +
+      '<td><code style="background:var(--bg2);padding:2px 6px;border-radius:4px;font-size:11px;">' + u.username + '</code></td>' +
+      '<td><span class="badge ' + (u.level==='admin'?'badge-info':'badge-success') + '">' + (u.level==='admin'?'Admin':'User') + '</span></td>' +
+      '<td><div style="display:flex;gap:4px;">' +
+        '<button class="icon-btn edit" onclick="editUser(\'' + u.id + '\')" title="แก้ไข">✏️</button>' +
+        (u.username !== 'admin' ? '<button class="icon-btn" onclick="deleteUser(\'' + u.id + '\')" title="ลบ" style="color:var(--danger);">🗑️</button>' : '') +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+
+  section.innerHTML =
+    '<table style="font-size:13px;width:100%;">' +
+      '<thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>Username</th><th>สิทธิ์</th><th></th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>' +
+    '<button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="openAddUser()">➕ เพิ่มผู้ใช้</button>';
+}
+
+function openAddUser() {
+  document.getElementById('addUserTitle').textContent = 'เพิ่มผู้ใช้งาน';
+  document.getElementById('editUserId').value = '';
+  document.getElementById('uName').value = '';
+  document.getElementById('uRole').value = '';
+  document.getElementById('uLevel').value = 'user';
+  document.getElementById('uUsername').value = '';
+  document.getElementById('uPassword').value = '';
+  openModal('addUserModal');
+}
+
+function editUser(id) {
+  const users = getUsers();
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('addUserTitle').textContent = 'แก้ไขผู้ใช้งาน';
+  document.getElementById('editUserId').value = u.id;
+  document.getElementById('uName').value = u.name;
+  document.getElementById('uRole').value = u.role;
+  document.getElementById('uLevel').value = u.level;
+  document.getElementById('uUsername').value = u.username;
+  document.getElementById('uPassword').value = '';
+  openModal('addUserModal');
+}
+
+function saveUser() {
+  const name = document.getElementById('uName').value.trim();
+  const username = document.getElementById('uUsername').value.trim();
+  const password = document.getElementById('uPassword').value;
+  const role = document.getElementById('uRole').value.trim();
+  const level = document.getElementById('uLevel').value;
+  const editId = document.getElementById('editUserId').value;
+
+  if (!name) { alert('กรุณากรอกชื่อ'); return; }
+  if (!username) { alert('กรุณากรอก Username'); return; }
+
+  const users = getUsers();
+
+  // เช็ค username ซ้ำ
+  const dup = users.find(u => u.username === username && u.id !== editId);
+  if (dup) { alert('Username นี้มีอยู่แล้ว'); return; }
+
+  if (editId) {
+    const idx = users.findIndex(u => u.id === editId);
+    if (idx > -1) {
+      users[idx].name = name;
+      users[idx].role = role;
+      users[idx].level = level;
+      users[idx].username = username;
+      if (password) users[idx].password = password;
+    }
+  } else {
+    if (!password) { alert('กรุณากรอกรหัสผ่าน'); return; }
+    users.push({ id: 'u' + Date.now(), name, role, level, username, password });
+  }
+
+  saveUsers(users);
+  closeModal('addUserModal');
+  renderUserMgmt();
+  showToast('✅ บันทึกข้อมูลผู้ใช้งานแล้ว');
+}
+
+function deleteUser(id) {
+  const users = getUsers();
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  if (!confirm(`ต้องการลบผู้ใช้ "${u.name}" ออกจากระบบ?`)) return;
+  saveUsers(users.filter(x => x.id !== id));
+  renderUserMgmt();
+  showToast('ลบผู้ใช้งานแล้ว');
+}
+
+// เรียก checkSession ตอนโหลด
+checkSession();
 
 // ===== INIT =====
 createSyncIndicator();
 window.addEventListener('load', () => { setTimeout(initGAS, 500); });
+
 </script>
 </body>
 </html>
