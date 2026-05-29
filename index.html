@@ -754,38 +754,38 @@
         ⚠️ <div><strong>แจ้งเตือนด่วน:</strong> เครื่องมือ 3 รายการครบกำหนดซ่อมบำรุง / สอบเทียบ ภายใน 7 วัน กรุณาดำเนินการโดยเร็ว</div>
       </div>
 
-      <!-- STATS -->
+      <!-- STATS — dynamic -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon blue">🔬</div>
           <div>
-            <div class="stat-value">248</div>
+            <div class="stat-value" id="statTotal">0</div>
             <div class="stat-label">เครื่องมือแพทย์ทั้งหมด</div>
-            <div class="stat-change up">▲ 5 เพิ่มในเดือนนี้</div>
+            <div class="stat-change up" id="statTotalSub">เริ่มเพิ่มข้อมูลได้เลย</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon green">✅</div>
           <div>
-            <div class="stat-value">218</div>
+            <div class="stat-value" id="statReady">0</div>
             <div class="stat-label">พร้อมใช้งาน</div>
-            <div class="stat-change up">87.9% ของทั้งหมด</div>
+            <div class="stat-change up" id="statReadySub">0% ของทั้งหมด</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon orange">🔧</div>
           <div>
-            <div class="stat-value">18</div>
+            <div class="stat-value" id="statRepair">0</div>
             <div class="stat-label">กำลังซ่อมบำรุง</div>
-            <div class="stat-change down">▲ 3 เพิ่มจากสัปดาห์ที่แล้ว</div>
+            <div class="stat-change" id="statRepairSub">รายการ</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon red">⚠️</div>
           <div>
-            <div class="stat-value">12</div>
+            <div class="stat-value" id="statCalib">0</div>
             <div class="stat-label">ครบกำหนดสอบเทียบ</div>
-            <div class="stat-change down">ต้องดำเนินการด่วน</div>
+            <div class="stat-change down" id="statCalibSub">ต้องดำเนินการด่วน</div>
           </div>
         </div>
       </div>
@@ -800,39 +800,8 @@
               <button class="btn btn-outline btn-sm" onclick="showPage('maintenance')">ดูทั้งหมด</button>
             </div>
           </div>
-          <div class="card-body" style="padding:0 20px;">
-            <div class="repair-item">
-              <div class="repair-icon" style="background:#FFF0DC;">🩺</div>
-              <div style="flex:1">
-                <div style="font-weight:600;font-size:13px;">เครื่อง EKG รุ่น 12-ลีด</div>
-                <div style="font-size:12px;color:var(--text3);">แผนกอายุรกรรม • เปลี่ยนสายนำสัญญาณ</div>
-              </div>
-              <span class="badge badge-warning">🔄 กำลังซ่อม</span>
-            </div>
-            <div class="repair-item">
-              <div class="repair-icon" style="background:#FDECEA;">💉</div>
-              <div style="flex:1">
-                <div style="font-weight:600;font-size:13px;">เครื่องฟอกไต B.Braun</div>
-                <div style="font-size:12px;color:var(--text3);">แผนกไตเทียม • PM ประจำปี</div>
-              </div>
-              <span class="badge badge-success">✅ เสร็จแล้ว</span>
-            </div>
-            <div class="repair-item">
-              <div class="repair-icon" style="background:#E8F2FB;">🏥</div>
-              <div style="flex:1">
-                <div style="font-weight:600;font-size:13px;">เตียงผู้ป่วย ICU (เตียง 3)</div>
-                <div style="font-size:12px;color:var(--text3);">ICU • ปรับระดับไม่ได้</div>
-              </div>
-              <span class="badge badge-danger">🆘 รอดำเนินการ</span>
-            </div>
-            <div class="repair-item">
-              <div class="repair-icon" style="background:#E6F7ED;">🌡️</div>
-              <div style="flex:1">
-                <div style="font-weight:600;font-size:13px;">เครื่องวัดความดันอัตโนมัติ</div>
-                <div style="font-size:12px;color:var(--text3);">OPD • ผลการวัดคลาดเคลื่อน</div>
-              </div>
-              <span class="badge badge-info">🔍 ตรวจสอบ</span>
-            </div>
+          <div class="card-body" style="padding:0 20px;" id="dashRepairList">
+            <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">ยังไม่มีข้อมูลการซ่อม</div>
           </div>
         </div>
 
@@ -842,58 +811,8 @@
             <span>⚖️</span>
             <h3>กำหนดการสอบเทียบ (30 วันข้างหน้า)</h3>
           </div>
-          <div class="card-body" style="padding:0;">
-            <table>
-              <thead>
-                <tr>
-                  <th>เครื่องมือ</th>
-                  <th>วันที่</th>
-                  <th>สถานะ</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <div style="font-weight:600;font-size:13px;">Autoclave 134°C</div>
-                    <div style="font-size:11px;color:var(--text3);">งานจ่ายกลาง</div>
-                  </td>
-                  <td><span style="font-size:12px;color:var(--danger);font-weight:700;">2 มิ.ย. 68</span></td>
-                  <td><span class="badge badge-danger"><span class="badge-dot"></span>เกินกำหนด</span></td>
-                </tr>
-                <tr>
-                  <td>
-                    <div style="font-weight:600;font-size:13px;">เครื่องชั่ง Mettler</div>
-                    <div style="font-size:11px;color:var(--text3);">เภสัชกรรม</div>
-                  </td>
-                  <td><span style="font-size:12px;color:var(--warning);font-weight:700;">5 มิ.ย. 68</span></td>
-                  <td><span class="badge badge-warning"><span class="badge-dot"></span>ใกล้ครบกำหนด</span></td>
-                </tr>
-                <tr>
-                  <td>
-                    <div style="font-weight:600;font-size:13px;">Vital Signs Monitor</div>
-                    <div style="font-size:11px;color:var(--text3);">ICU</div>
-                  </td>
-                  <td><span style="font-size:12px;color:var(--warning);font-weight:700;">10 มิ.ย. 68</span></td>
-                  <td><span class="badge badge-warning"><span class="badge-dot"></span>ใกล้ครบกำหนด</span></td>
-                </tr>
-                <tr>
-                  <td>
-                    <div style="font-weight:600;font-size:13px;">เครื่องตรวจ CBC</div>
-                    <div style="font-size:11px;color:var(--text3);">ห้องปฏิบัติการ</div>
-                  </td>
-                  <td><span style="font-size:12px;color:var(--text2);">20 มิ.ย. 68</span></td>
-                  <td><span class="badge badge-info"><span class="badge-dot"></span>กำหนดการ</span></td>
-                </tr>
-                <tr>
-                  <td>
-                    <div style="font-weight:600;font-size:13px;">X-Ray Detector Panel</div>
-                    <div style="font-size:11px;color:var(--text3);">รังสีวิทยา</div>
-                  </td>
-                  <td><span style="font-size:12px;color:var(--text2);">28 มิ.ย. 68</span></td>
-                  <td><span class="badge badge-gray"><span class="badge-dot"></span>ปกติ</span></td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="card-body" style="padding:0;" id="dashCalibList">
+            <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">ยังไม่มีข้อมูลสอบเทียบ</div>
           </div>
         </div>
       </div>
@@ -902,49 +821,8 @@
         <!-- DEPT SUMMARY -->
         <div class="card">
           <div class="card-header"><span>🏢</span><h3>สรุปตามแผนก</h3></div>
-          <div class="card-body">
-            <div style="display:flex;flex-direction:column;gap:14px;">
-              <div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
-                  <span style="font-weight:600;">ER / IPD / LR</span>
-                  <span style="color:var(--text3);">52 เครื่อง</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" style="width:92%;background:var(--success);"></div></div>
-                <div style="font-size:11px;color:var(--text3);margin-top:3px;">พร้อมใช้งาน 92%</div>
-              </div>
-              <div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
-                  <span style="font-weight:600;">LAB (ห้องปฏิบัติการ)</span>
-                  <span style="color:var(--text3);">48 เครื่อง</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" style="width:88%;background:var(--primary);"></div></div>
-                <div style="font-size:11px;color:var(--text3);margin-top:3px;">พร้อมใช้งาน 88%</div>
-              </div>
-              <div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
-                  <span style="font-weight:600;">OPD / NCD / PCU</span>
-                  <span style="color:var(--text3);">65 เครื่อง</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" style="width:95%;background:var(--success);"></div></div>
-                <div style="font-size:11px;color:var(--text3);margin-top:3px;">พร้อมใช้งาน 95%</div>
-              </div>
-              <div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
-                  <span style="font-weight:600;">ทันตกรรม / กายภาพ / แผนไทย</span>
-                  <span style="color:var(--text3);">38 เครื่อง</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" style="width:84%;background:var(--accent);"></div></div>
-                <div style="font-size:11px;color:var(--text3);margin-top:3px;">พร้อมใช้งาน 84%</div>
-              </div>
-              <div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
-                  <span style="font-weight:600;">ห้องยา / งานคร. / IT / ส่วนกลาง</span>
-                  <span style="color:var(--text3);">45 เครื่อง</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" style="width:91%;background:var(--primary);"></div></div>
-                <div style="font-size:11px;color:var(--text3);margin-top:3px;">พร้อมใช้งาน 91%</div>
-              </div>
-            </div>
+          <div class="card-body" id="dashDeptSummary">
+            <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">เพิ่มข้อมูลเครื่องมือเพื่อดูสรุป</div>
           </div>
         </div>
 
@@ -952,32 +830,8 @@
         <div class="card">
           <div class="card-header"><span>📝</span><h3>กิจกรรมล่าสุด</h3></div>
           <div class="card-body">
-            <ul class="timeline">
-              <li>
-                <div class="t-time">วันนี้ 08:12 น.</div>
-                <div class="t-text">เพิ่มเครื่อง Defibrillator รุ่นใหม่ เข้าทะเบียน</div>
-                <div class="t-by">โดย: นายสมชาย ใจดี</div>
-              </li>
-              <li>
-                <div class="t-time">เมื่อวาน 15:40 น.</div>
-                <div class="t-text">บันทึกงานซ่อม: เครื่องฟอกไต เสร็จสิ้น</div>
-                <div class="t-by">โดย: นางสาวสุภาพ รักดี</div>
-              </li>
-              <li>
-                <div class="t-time">เมื่อวาน 10:05 น.</div>
-                <div class="t-text">สอบเทียบเครื่องชั่ง Sartorius ห้องเภสัช</div>
-                <div class="t-by">โดย: นายสมชาย ใจดี</div>
-              </li>
-              <li>
-                <div class="t-time">28 พ.ค. 68</div>
-                <div class="t-text">ยืมเครื่อง Pulse Oximeter 3 เครื่อง ให้แผนก IPD</div>
-                <div class="t-by">โดย: นางสาวมาลี สวัสดี</div>
-              </li>
-              <li>
-                <div class="t-time">27 พ.ค. 68</div>
-                <div class="t-text">แจ้งซ่อม Autoclave CSR — แรงดันไม่ถึง</div>
-                <div class="t-by">โดย: นางรัตนา ดีงาม</div>
-              </li>
+            <ul class="timeline" id="dashActivityLog">
+              <li><div class="t-time">--</div><div class="t-text">ยังไม่มีกิจกรรม — เริ่มเพิ่มข้อมูลเครื่องมือได้เลย</div></li>
             </ul>
           </div>
         </div>
@@ -1047,14 +901,8 @@
           </table>
         </div>
         <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:13px;color:var(--text3);" id="tableCount">แสดง 10 จาก 248 รายการ</span>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-outline btn-sm">← ก่อนหน้า</button>
-            <button class="btn btn-primary btn-sm" style="background:var(--primary);">1</button>
-            <button class="btn btn-outline btn-sm">2</button>
-            <button class="btn btn-outline btn-sm">3</button>
-            <button class="btn btn-outline btn-sm">ถัดไป →</button>
-          </div>
+          <span style="font-size:13px;color:var(--text3);" id="tableCount">แสดง 0 รายการ</span>
+          <div style="display:flex;gap:6px;" id="tablePagination"></div>
         </div>
       </div>
     </div>
@@ -1062,7 +910,7 @@
     <!-- ===== PAGE: MAINTENANCE ===== -->
     <div class="page" id="page-maintenance">
       <div class="tabs">
-        <div class="tab active" onclick="switchTab(this,'repair-pending')">🆘 รอดำเนินการ <span style="background:var(--danger);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;">3</span></div>
+        <div class="tab active" onclick="switchTab(this,'repair-pending')">🆘 รอดำเนินการ <span id="repairBadge" style="background:var(--danger);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;">0</span></div>
         <div class="tab" onclick="switchTab(this,'repair-inprogress')">🔄 กำลังดำเนินการ</div>
         <div class="tab" onclick="switchTab(this,'repair-done')">✅ เสร็จสิ้น</div>
       </div>
@@ -1077,40 +925,9 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr><th>เลขที่ใบแจ้ง</th><th>เครื่องมือ</th><th>อาการ</th><th>แผนก</th><th>ผู้แจ้ง</th><th>วันแจ้ง</th><th>ความเร่งด่วน</th><th>จัดการ</th></tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong style="color:var(--primary);">REP-2568-045</strong></td>
-                  <td>เตียง ICU เตียง 3</td>
-                  <td>ปรับระดับไม่ได้</td>
-                  <td>ICU</td>
-                  <td>พยาบาลอารี</td>
-                  <td>29/05/68</td>
-                  <td><span class="badge badge-danger">🔴 ด่วนมาก</span></td>
-                  <td><div style="display:flex;gap:4px;"><button class="icon-btn edit" title="รับงาน">✍️</button><button class="icon-btn" title="ดูรายละเอียด">👁️</button></div></td>
-                </tr>
-                <tr>
-                  <td><strong style="color:var(--primary);">REP-2568-044</strong></td>
-                  <td>Autoclave CSR-02</td>
-                  <td>แรงดันไม่ถึง 134°C</td>
-                  <td>งานจ่ายกลาง</td>
-                  <td>นางรัตนา</td>
-                  <td>27/05/68</td>
-                  <td><span class="badge badge-danger">🔴 ด่วนมาก</span></td>
-                  <td><div style="display:flex;gap:4px;"><button class="icon-btn edit" title="รับงาน">✍️</button><button class="icon-btn" title="ดูรายละเอียด">👁️</button></div></td>
-                </tr>
-                <tr>
-                  <td><strong style="color:var(--primary);">REP-2568-043</strong></td>
-                  <td>Suction Machine OP-1</td>
-                  <td>เสียงดังผิดปกติ</td>
-                  <td>ห้องผ่าตัด</td>
-                  <td>น.ส.สมหมาย</td>
-                  <td>26/05/68</td>
-                  <td><span class="badge badge-warning">🟡 ปานกลาง</span></td>
-                  <td><div style="display:flex;gap:4px;"><button class="icon-btn edit" title="รับงาน">✍️</button><button class="icon-btn" title="ดูรายละเอียด">👁️</button></div></td>
-                </tr>
+              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>อาการ</th><th>แผนก</th><th>ผู้แจ้ง</th><th>วันแจ้ง</th><th>ความเร่งด่วน</th></tr></thead>
+              <tbody id="repairPendingBody">
+                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่รอดำเนินการ</td></tr>
               </tbody>
             </table>
           </div>
@@ -1122,28 +939,9 @@
           <div class="card-header"><span>🔄</span><h3>งานซ่อมที่กำลังดำเนินการ</h3></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>เลขที่</th><th>เครื่องมือ</th><th>ช่างผู้รับผิดชอบ</th><th>รายละเอียด</th><th>วันรับงาน</th><th>กำหนดเสร็จ</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td><strong style="color:var(--primary);">REP-2568-041</strong></td>
-                  <td>EKG 12-ลีด</td>
-                  <td>สมชาย ใจดี</td>
-                  <td>เปลี่ยนสายนำสัญญาณ</td>
-                  <td>25/05/68</td>
-                  <td>31/05/68</td>
-                  <td><span class="badge badge-warning">🔄 รอวัสดุ</span></td>
-                  <td><button class="icon-btn" title="อัปเดตสถานะ">✍️</button></td>
-                </tr>
-                <tr>
-                  <td><strong style="color:var(--primary);">REP-2568-038</strong></td>
-                  <td>Infusion Pump B.Braun</td>
-                  <td>สมชาย ใจดี</td>
-                  <td>เซ็นเซอร์แรงดันผิดพลาด</td>
-                  <td>22/05/68</td>
-                  <td>05/06/68</td>
-                  <td><span class="badge badge-info">🔍 ส่งซ่อมนอก</span></td>
-                  <td><button class="icon-btn" title="อัปเดตสถานะ">✍️</button></td>
-                </tr>
+              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>รายละเอียด</th><th>ผู้รับผิดชอบ</th><th>วันแจ้ง</th><th>สถานะ</th></tr></thead>
+              <tbody id="repairInprogressBody">
+                <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ไม่มีงานที่กำลังดำเนินการ</td></tr>
               </tbody>
             </table>
           </div>
@@ -1152,29 +950,12 @@
 
       <div class="tab-content" id="repair-done">
         <div class="card">
-          <div class="card-header"><span>✅</span><h3>งานซ่อมที่เสร็จสิ้น (เดือนนี้)</h3></div>
+          <div class="card-header"><span>✅</span><h3>งานซ่อมที่เสร็จสิ้น</h3></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>เลขที่</th><th>เครื่องมือ</th><th>รายละเอียด</th><th>Downtime (วัน)</th><th>ค่าซ่อม</th><th>วันเสร็จ</th><th>สถานะ</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td><strong style="color:var(--primary);">REP-2568-040</strong></td>
-                  <td>เครื่องฟอกไต B.Braun</td>
-                  <td>PM ประจำปี เปลี่ยนฟิลเตอร์</td>
-                  <td style="text-align:center;"><span style="background:#EBF5FF;color:#165A94;padding:2px 10px;border-radius:10px;font-weight:700;">3</span></td>
-                  <td>12,500 บาท</td>
-                  <td>28/05/68</td>
-                  <td><span class="badge badge-success">✅ เสร็จสิ้น</span></td>
-                </tr>
-                <tr>
-                  <td><strong style="color:var(--primary);">REP-2568-037</strong></td>
-                  <td>Ventilator Hamilton C1</td>
-                  <td>เปลี่ยน battery backup</td>
-                  <td style="text-align:center;"><span style="background:#EBF5FF;color:#165A94;padding:2px 10px;border-radius:10px;font-weight:700;">1</span></td>
-                  <td>8,200 บาท</td>
-                  <td>24/05/68</td>
-                  <td><span class="badge badge-success">✅ เสร็จสิ้น</span></td>
-                </tr>
+              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>รายละเอียด</th><th>Downtime (วัน)</th><th>ค่าซ่อม</th><th>วันเสร็จ</th></tr></thead>
+              <tbody id="repairDoneBody">
+                <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่เสร็จสิ้น</td></tr>
               </tbody>
             </table>
           </div>
@@ -1188,74 +969,24 @@
         <div class="tab active" onclick="switchTab(this,'pm-plan')">📅 แผน PM ประจำปี</div>
         <div class="tab" onclick="switchTab(this,'pm-history')">📋 ประวัติ PM</div>
       </div>
-
       <div class="tab-content active" id="pm-plan">
         <div class="card">
           <div class="card-header">
-            <span>📅</span><h3>แผนการบำรุงรักษาประจำปี 2568</h3>
+            <span>📅</span><h3>แผนการบำรุงรักษาประจำปี</h3>
             <div class="header-actions">
               <button class="btn btn-primary btn-sm" onclick="openPMModal()">➕ เพิ่มแผน PM</button>
             </div>
           </div>
-          <div class="card-body">
-            <div class="alert alert-info">📋 แผน PM ประจำปีมีทั้งหมด 186 รายการ — ดำเนินการแล้ว 142 รายการ (76.3%)</div>
-            <div style="margin:12px 0 20px;">
-              <div class="progress-bar" style="height:12px;border-radius:6px;">
-                <div class="progress-fill" style="width:76%;background:linear-gradient(90deg,var(--primary),var(--accent));"></div>
-              </div>
-              <div style="font-size:12px;color:var(--text3);margin-top:6px;">76% เสร็จสิ้น — เหลือ 44 รายการ</div>
-            </div>
-          </div>
-          <div class="card-body" style="padding-top:0;">
-            <div class="filter-bar" style="margin-bottom:16px;">
-              <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" placeholder="ค้นหาเครื่องมือ หรือแผนก...">
-              </div>
-              <select><option>ทุกสถานะ</option><option>✅ เสร็จแล้ว</option><option>⏳ รอดำเนินการ</option><option>📅 กำหนดการ</option></select>
-              <select><option>ทุกแผนก</option><option>ER (ห้องฉุกเฉิน)</option><option>IPD (ผู้ป่วยใน)</option><option>LAB (ห้องปฏิบัติการ)</option><option>OPD (ผู้ป่วยนอก)</option><option>ส่วนกลาง</option></select>
-            </div>
-          </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่อง</th><th>แผนก</th><th>กำหนด PM</th><th>ความถี่</th><th>ผู้รับผิดชอบ</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td><strong style="color:var(--primary);">EQ-0005</strong></td>
-                  <td>Autoclave 134°C (CSR-01)</td><td>ส่วนกลาง</td><td>ม.ค. 68</td><td>รายปี</td><td>สมชาย ใจดี</td>
-                  <td><span class="badge badge-success">✅ เสร็จ</span></td>
-                  <td><button class="icon-btn" title="บันทึกผล">✍️</button></td>
-                </tr>
-                <tr>
-                  <td><strong style="color:var(--primary);">EQ-0001</strong></td>
-                  <td>Ventilator Hamilton G5</td><td>IPD (ผู้ป่วยใน)</td><td>มี.ค. 68</td><td>6 เดือน</td><td>บ.เมดทรอนิค</td>
-                  <td><span class="badge badge-success">✅ เสร็จ</span></td>
-                  <td><button class="icon-btn" title="บันทึกผล">✍️</button></td>
-                </tr>
-                <tr>
-                  <td><strong style="color:var(--primary);">EQ-0009</strong></td>
-                  <td>X-Ray Machine DR Carestream</td><td>OPD (ผู้ป่วยนอก)</td><td>มิ.ย. 68</td><td>รายปี</td><td>บ.แคร์สตรีม</td>
-                  <td><span class="badge badge-warning">⏳ รอดำเนินการ</span></td>
-                  <td><button class="icon-btn" title="บันทึกผล">✍️</button></td>
-                </tr>
-                <tr>
-                  <td><strong style="color:var(--primary);">EQ-0007</strong></td>
-                  <td>CBC Analyzer Sysmex XN-550</td><td>LAB (ห้องปฏิบัติการ)</td><td>ก.ย. 68</td><td>รายปี</td><td>บ.ซีเมนส์เฮลธ์</td>
-                  <td><span class="badge badge-gray">📅 กำหนดการ</span></td>
-                  <td><button class="icon-btn" title="บันทึกผล">✍️</button></td>
-                </tr>
-                <tr>
-                  <td><strong style="color:var(--primary);">EQ-0008</strong></td>
-                  <td>Bilirubin Meter APEL BR-502</td><td>LAB (ห้องปฏิบัติการ)</td><td>ต.ค. 68</td><td>รายปี</td><td>บ.ไบโอเชน</td>
-                  <td><span class="badge badge-gray">📅 กำหนดการ</span></td>
-                  <td><button class="icon-btn" title="บันทึกผล">✍️</button></td>
-                </tr>
+              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่อง</th><th>แผนก</th><th>ความถี่ PM</th><th>วันรับเครื่อง</th><th>สถานะ</th></tr></thead>
+              <tbody id="pmPlanBody">
+                <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">เพิ่มข้อมูลเครื่องมือเพื่อแสดงแผน PM</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
-
       <div class="tab-content" id="pm-history">
         <div class="card">
           <div class="card-header">
@@ -1267,41 +998,14 @@
           <div class="table-wrap">
             <table>
               <thead><tr><th>วันที่</th><th>รหัส/ชื่อเครื่อง</th><th>แผนก</th><th>รายละเอียด PM</th><th>ดำเนินการโดย</th><th>ค่าใช้จ่าย</th><th>ผล</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td>15/03/2568</td>
-                  <td><strong>EQ-0001</strong><br><span style="font-size:11px;color:var(--text3);">Ventilator Hamilton G5</span></td>
-                  <td>IPD (ผู้ป่วยใน)</td>
-                  <td>PM ประจำปี ครั้งที่ 3 เปลี่ยน battery backup</td>
-                  <td>บ.เมดทรอนิค</td>
-                  <td>15,000 บาท</td>
-                  <td><span class="badge badge-success">✅ ผ่าน</span></td>
-                </tr>
-                <tr>
-                  <td>01/09/2567</td>
-                  <td><strong>EQ-0007</strong><br><span style="font-size:11px;color:var(--text3);">CBC Analyzer Sysmex XN-550</span></td>
-                  <td>LAB (ห้องปฏิบัติการ)</td>
-                  <td>PM ประจำปี เปลี่ยน reagent lines และ tubing</td>
-                  <td>บ.ซีเมนส์เฮลธ์</td>
-                  <td>8,500 บาท</td>
-                  <td><span class="badge badge-success">✅ ผ่าน</span></td>
-                </tr>
-                <tr>
-                  <td>12/11/2566</td>
-                  <td><strong>EQ-0005</strong><br><span style="font-size:11px;color:var(--text3);">Autoclave 134°C (CSR-01)</span></td>
-                  <td>ส่วนกลาง</td>
-                  <td>PM ประจำปี เปลี่ยน O-Ring และทดสอบแรงดัน</td>
-                  <td>สมชาย ใจดี</td>
-                  <td>3,200 บาท</td>
-                  <td><span class="badge badge-success">✅ ผ่าน</span></td>
-                </tr>
+              <tbody id="pmHistoryBody">
+                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีประวัติการบำรุงรักษา</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
     </div>
-
     <!-- ===== PAGE: CALIBRATION ===== -->
     <div class="page" id="page-calibration">
       <div class="card">
@@ -1351,7 +1055,6 @@
         <div class="tab active" onclick="switchTab(this,'borrow-active')">📤 กำลังยืม</div>
         <div class="tab" onclick="switchTab(this,'borrow-history')">📋 ประวัติการยืม</div>
       </div>
-
       <div class="tab-content active" id="borrow-active">
         <div class="card">
           <div class="card-header">
@@ -1362,75 +1065,42 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>เลขที่</th><th>เครื่องมือ</th><th>แผนกที่ยืม</th><th>ผู้ยืม</th><th>วันยืม</th><th>กำหนดคืน</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td>BRW-068-015</td>
-                  <td>Pulse Oximeter × 3</td>
-                  <td>IPD อายุรกรรม</td>
-                  <td>พยาบาลมาลี</td>
-                  <td>28/05/68</td>
-                  <td>04/06/68</td>
-                  <td><span class="badge badge-info">📤 ออกไปแล้ว</span></td>
-                  <td><button class="btn btn-success btn-sm" onclick="alert('บันทึกการคืนเครื่องมือ')">✅ รับคืน</button></td>
-                </tr>
-                <tr>
-                  <td>BRW-068-014</td>
-                  <td>Portable Suction × 1</td>
-                  <td>ห้องฉุกเฉิน ER</td>
-                  <td>แพทย์ประจำ</td>
-                  <td>27/05/68</td>
-                  <td>30/05/68</td>
-                  <td><span class="badge badge-danger">⚠️ เกินกำหนด</span></td>
-                  <td><button class="btn btn-success btn-sm" onclick="alert('บันทึกการคืนเครื่องมือ')">✅ รับคืน</button></td>
-                </tr>
-                <tr>
-                  <td>BRW-068-013</td>
-                  <td>เครื่อง EKG พกพา</td>
-                  <td>งาน PCT ชุมชน</td>
-                  <td>นางสาวอรทัย</td>
-                  <td>25/05/68</td>
-                  <td>01/06/68</td>
-                  <td><span class="badge badge-info">📤 ออกไปแล้ว</span></td>
-                  <td><button class="btn btn-success btn-sm" onclick="alert('บันทึกการคืนเครื่องมือ')">✅ รับคืน</button></td>
-                </tr>
+              <thead><tr><th>เครื่องมือ</th><th>แผนกที่ยืม</th><th>ผู้ยืม</th><th>วันยืม</th><th>กำหนดคืน</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+              <tbody id="borrowActiveBody">
+                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีรายการยืมที่ค้างอยู่</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
-
       <div class="tab-content" id="borrow-history">
         <div class="card">
           <div class="card-header"><span>📋</span><h3>ประวัติการยืม-คืน</h3></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>เลขที่</th><th>เครื่องมือ</th><th>แผนก</th><th>วันยืม</th><th>วันคืน</th><th>สภาพ</th></tr></thead>
-              <tbody>
-                <tr><td>BRW-068-012</td><td>BP Monitor Auto × 2</td><td>PCT ชุมชน</td><td>18/05/68</td><td>25/05/68</td><td><span class="badge badge-success">✅ สมบูรณ์</span></td></tr>
-                <tr><td>BRW-068-011</td><td>Glucometer Kit</td><td>OPD</td><td>15/05/68</td><td>20/05/68</td><td><span class="badge badge-success">✅ สมบูรณ์</span></td></tr>
-                <tr><td>BRW-068-010</td><td>Stethoscope Littmann</td><td>IPD</td><td>10/05/68</td><td>17/05/68</td><td><span class="badge badge-warning">⚠️ ชำรุดบางส่วน</span></td></tr>
+              <thead><tr><th>เครื่องมือ</th><th>แผนก</th><th>ผู้ยืม</th><th>วันยืม</th><th>วันคืน</th><th>สภาพ</th></tr></thead>
+              <tbody id="borrowHistoryBody">
+                <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีประวัติการยืม-คืน</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
     </div>
-
     <!-- ===== PAGE: INVENTORY ===== -->
     <div class="page" id="page-inventory">
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
         <div class="stat-card">
           <div class="stat-icon blue">📦</div>
-          <div><div class="stat-value">1,284</div><div class="stat-label">รายการวัสดุสิ้นเปลือง</div></div>
+          <div><div class="stat-value" id="invTotal">0</div><div class="stat-label">รายการวัสดุสิ้นเปลือง</div></div>
         </div>
         <div class="stat-card">
           <div class="stat-icon orange">⚠️</div>
-          <div><div class="stat-value">24</div><div class="stat-label">รายการใกล้หมด (≤10%)</div></div>
+          <div><div class="stat-value" id="invLow">0</div><div class="stat-label">รายการใกล้หมด (≤10%)</div></div>
         </div>
         <div class="stat-card">
           <div class="stat-icon red">🔴</div>
-          <div><div class="stat-value">6</div><div class="stat-label">รายการหมดคลัง</div></div>
+          <div><div class="stat-value" id="invOut">0</div><div class="stat-label">รายการหมดคลัง</div></div>
         </div>
       </div>
       <div class="card">
@@ -1440,18 +1110,13 @@
         <div class="table-wrap">
           <table>
             <thead><tr><th>รหัส</th><th>ชื่อวัสดุ</th><th>หน่วย</th><th>คงเหลือ</th><th>จุดสั่งซื้อ</th><th>ราคาต่อหน่วย</th><th>สถานะ</th></tr></thead>
-            <tbody>
-              <tr><td>MAT-001</td><td>สายนำสัญญาณ EKG (10 ลีด)</td><td>ชุด</td><td style="font-weight:700;color:var(--danger);">2</td><td>5</td><td>1,200 บาท</td><td><span class="badge badge-danger">🔴 วิกฤต</span></td></tr>
-              <tr><td>MAT-002</td><td>ฟิลเตอร์เครื่องฟอกไต</td><td>ชิ้น</td><td style="font-weight:700;color:var(--warning);">8</td><td>10</td><td>850 บาท</td><td><span class="badge badge-warning">⚠️ ใกล้หมด</span></td></tr>
-              <tr><td>MAT-003</td><td>O-Ring Autoclave</td><td>ชิ้น</td><td>45</td><td>20</td><td>80 บาท</td><td><span class="badge badge-success">✅ เพียงพอ</span></td></tr>
-              <tr><td>MAT-004</td><td>Battery 9V (แพ็ค 10)</td><td>แพ็ค</td><td>12</td><td>5</td><td>120 บาท</td><td><span class="badge badge-success">✅ เพียงพอ</span></td></tr>
-              <tr><td>MAT-005</td><td>น้ำกลั่น 5L</td><td>แกลลอน</td><td style="font-weight:700;color:var(--danger);">0</td><td>5</td><td>65 บาท</td><td><span class="badge badge-danger">🔴 หมด</span></td></tr>
+            <tbody id="invBody">
+              <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีข้อมูลวัสดุสิ้นเปลือง</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
-
     <!-- ===== PAGE: PURCHASE ===== -->
     <div class="page" id="page-purchase">
       <div class="card">
@@ -1461,61 +1126,31 @@
         <div class="table-wrap">
           <table>
             <thead><tr><th>เลขที่ PO</th><th>รายการ</th><th>จำนวน</th><th>งบประมาณ</th><th>ผู้จัดจำหน่าย</th><th>วันที่สั่ง</th><th>กำหนดส่ง</th><th>สถานะ</th></tr></thead>
-            <tbody>
-              <tr>
-                <td><strong>PO-2568-018</strong></td>
-                <td>Defibrillator รุ่น AED Plus</td>
-                <td>2 เครื่อง</td>
-                <td>360,000 บาท</td>
-                <td>บ.เมดทรอนิค</td>
-                <td>20/05/68</td>
-                <td>15/06/68</td>
-                <td><span class="badge badge-info">📦 รอส่งของ</span></td>
-              </tr>
-              <tr>
-                <td><strong>PO-2568-015</strong></td>
-                <td>Pulse Oximeter พกพา</td>
-                <td>10 เครื่อง</td>
-                <td>45,000 บาท</td>
-                <td>บ.ไทยเมดิคอล</td>
-                <td>10/05/68</td>
-                <td>25/05/68</td>
-                <td><span class="badge badge-warning">⏳ ล่าช้า</span></td>
-              </tr>
-              <tr>
-                <td><strong>PO-2568-012</strong></td>
-                <td>สายนำสัญญาณ EKG</td>
-                <td>20 ชุด</td>
-                <td>24,000 บาท</td>
-                <td>บ.เฮลท์ไลน์</td>
-                <td>01/05/68</td>
-                <td>15/05/68</td>
-                <td><span class="badge badge-success">✅ ได้รับแล้ว</span></td>
-              </tr>
+            <tbody id="purchaseBody">
+              <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีรายการจัดซื้อ-จัดจ้าง</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
-
     <!-- ===== PAGE: REPORTS ===== -->
     <div class="page" id="page-reports">
       <div class="grid-3" style="margin-bottom:20px;">
-        <div class="card" style="cursor:pointer;" onclick="alert('เปิดรายงานค่าใช้จ่าย')">
+        <div class="card" style="cursor:pointer;" onclick="generateRepairReport()">
           <div class="card-body" style="text-align:center;padding:24px 16px;">
             <div style="font-size:36px;margin-bottom:10px;">💰</div>
             <div style="font-weight:700;font-size:15px;">รายงานค่าใช้จ่าย</div>
             <div style="font-size:12px;color:var(--text3);margin-top:4px;">ซ่อมบำรุง / จัดซื้อ</div>
           </div>
         </div>
-        <div class="card" style="cursor:pointer;" onclick="alert('เปิดรายงานอายุการใช้งาน')">
+        <div class="card" style="cursor:pointer;" onclick="generateLifespanReport()">
           <div class="card-body" style="text-align:center;padding:24px 16px;">
             <div style="font-size:36px;margin-bottom:10px;">📊</div>
             <div style="font-weight:700;font-size:15px;">รายงานอายุเครื่องมือ</div>
             <div style="font-size:12px;color:var(--text3);margin-top:4px;">วิเคราะห์ตามอายุ</div>
           </div>
         </div>
-        <div class="card" style="cursor:pointer;" onclick="alert('เปิดรายงาน PM')">
+        <div class="card" style="cursor:pointer;" onclick="generatePMReport()">
           <div class="card-body" style="text-align:center;padding:24px 16px;">
             <div style="font-size:36px;margin-bottom:10px;">📋</div>
             <div style="font-weight:700;font-size:15px;">รายงาน PM ประจำปี</div>
@@ -1524,37 +1159,16 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><span>📈</span><h3>สรุปค่าใช้จ่ายซ่อมบำรุง ประจำปี 2568</h3></div>
-        <div class="card-body">
-          <div class="grid-2">
-            <div>
-              <div class="alert alert-info">💰 ค่าซ่อมบำรุงรวม 5 เดือน (ม.ค.-พ.ค. 68): <strong>387,500 บาท</strong></div>
-              <table style="font-size:13px;">
-                <thead><tr><th>เดือน</th><th>ค่าซ่อม</th><th>จำนวนงาน</th></tr></thead>
-                <tbody>
-                  <tr><td>มกราคม 68</td><td>62,400 บาท</td><td>12 งาน</td></tr>
-                  <tr><td>กุมภาพันธ์ 68</td><td>78,200 บาท</td><td>15 งาน</td></tr>
-                  <tr><td>มีนาคม 68</td><td>95,300 บาท</td><td>18 งาน</td></tr>
-                  <tr><td>เมษายน 68</td><td>71,100 บาท</td><td>14 งาน</td></tr>
-                  <tr><td>พฤษภาคม 68</td><td>80,500 บาท</td><td>16 งาน</td></tr>
-                  <tr style="background:#F0F4F8;font-weight:700;"><td>รวม</td><td>387,500 บาท</td><td>75 งาน</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div>
-              <div style="font-weight:600;margin-bottom:12px;font-size:14px;">ค่าซ่อมแยกตามแผนก</div>
-              <div style="display:flex;flex-direction:column;gap:12px;">
-                <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>ICU / ห้องผ่าตัด</span><span style="font-weight:700;">142,800 บาท</span></div><div class="progress-bar"><div class="progress-fill" style="width:37%;background:var(--primary);"></div></div></div>
-                <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>รังสีวิทยา</span><span style="font-weight:700;">98,500 บาท</span></div><div class="progress-bar"><div class="progress-fill" style="width:25%;background:var(--accent);"></div></div></div>
-                <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>ห้องปฏิบัติการ</span><span style="font-weight:700;">76,200 บาท</span></div><div class="progress-bar"><div class="progress-fill" style="width:20%;background:var(--success);"></div></div></div>
-                <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>OPD / อื่นๆ</span><span style="font-weight:700;">70,000 บาท</span></div><div class="progress-bar"><div class="progress-fill" style="width:18%;background:var(--warning);"></div></div></div>
-              </div>
-            </div>
+        <div class="card-header"><span>📈</span><h3>สรุปข้อมูลเครื่องมือแพทย์</h3></div>
+        <div class="card-body" id="reportSummaryBody">
+          <div style="text-align:center;padding:32px;color:var(--text3);">
+            <div style="font-size:48px;margin-bottom:12px;">📊</div>
+            <div style="font-size:15px;font-weight:600;margin-bottom:6px;">ยังไม่มีข้อมูลเพียงพอสำหรับรายงาน</div>
+            <div style="font-size:13px;">เพิ่มข้อมูลเครื่องมือแพทย์เพื่อดูรายงานสรุป</div>
           </div>
         </div>
       </div>
     </div>
-
     <!-- ===== PAGE: SETTINGS ===== -->
     <div class="page" id="page-settings">
       <div class="grid-2">
@@ -2496,73 +2110,7 @@ function updateEditLifespanDisplay(isoVal) {
 }
 
 // ===== SAMPLE DATA (receiveDateISO stored as ISO for input fields) =====
-const equipmentData = [
-  { code:'EQ-0001', name:'Ventilator Hamilton G5', brand:'Hamilton', model:'G5', dept:'IPD (ผู้ป่วยใน)',
-    price:'1,850,000', year:'2564', status:'พร้อมใช้งาน', pm:'01/07/2568',
-    manufacturer:'Hamilton Medical AG', supplier:'บ.เมดทรอนิค จำกัด', techPhone:'081-234-5678',
-    receiveDate:'15/03/2564', warrantyEnd:'15/03/2567', batteryDate:'01/12/2566',
-    serial:'HG5-20210315', lifespan:'10', note:'ติดตั้งที่ห้องผู้ป่วยหนัก' },
-  { code:'EQ-0002', name:'Vital Signs Monitor Mindray', brand:'Mindray', model:'MEC-1200', dept:'ER (ห้องฉุกเฉิน)',
-    price:'145,000', year:'2565', status:'พร้อมใช้งาน', pm:'10/06/2568',
-    manufacturer:'Mindray Medical Int.', supplier:'บ.ไทยเมดิคอล จำกัด', techPhone:'082-345-6789',
-    receiveDate:'20/06/2565', warrantyEnd:'20/06/2568', batteryDate:'-',
-    serial:'MEC-20220620', lifespan:'7', note:'' },
-  { code:'EQ-0003', name:'Defibrillator Zoll AED Plus', brand:'Zoll', model:'AED Plus', dept:'ER (ห้องฉุกเฉิน)',
-    price:'280,000', year:'2566', status:'พร้อมใช้งาน', pm:'15/09/2568',
-    manufacturer:'Zoll Medical Corp.', supplier:'บ.เฮลท์ไลน์ จำกัด', techPhone:'083-456-7890',
-    receiveDate:'10/01/2566', warrantyEnd:'10/01/2569', batteryDate:'10/01/2566',
-    serial:'ZOLL-20230110', lifespan:'10', note:'' },
-  { code:'EQ-0004', name:'EKG Machine 12-Lead', brand:'Schiller', model:'AT-102', dept:'OPD (ผู้ป่วยนอก)',
-    price:'120,000', year:'2562', status:'กำลังซ่อม', pm:'-',
-    manufacturer:'Schiller AG', supplier:'บ.สยามเมดิค จำกัด', techPhone:'084-567-8901',
-    receiveDate:'05/08/2562', warrantyEnd:'05/08/2565', batteryDate:'20/03/2566',
-    serial:'SCH-20190805', lifespan:'10', note:'รอเปลี่ยนสายนำสัญญาณ' },
-  { code:'EQ-0005', name:'Autoclave 134°C (CSR-01)', brand:'Tuttnauer', model:'3870M', dept:'ส่วนกลาง',
-    price:'380,000', year:'2563', status:'พร้อมใช้งาน', pm:'02/06/2568',
-    manufacturer:'Tuttnauer Europe', supplier:'บ.ไทยสเตอร์ จำกัด', techPhone:'085-678-9012',
-    receiveDate:'12/11/2563', warrantyEnd:'12/11/2566', batteryDate:'-',
-    serial:'TUT-20201112', lifespan:'15', note:'' },
-  { code:'EQ-0006', name:'Ultrasound Portable GE Vscan', brand:'GE', model:'Vscan Air', dept:'OPD (ผู้ป่วยนอก)',
-    price:'650,000', year:'2566', status:'พร้อมใช้งาน', pm:'20/08/2568',
-    manufacturer:'GE Healthcare', supplier:'บ.GE Thailand จำกัด', techPhone:'086-789-0123',
-    receiveDate:'25/04/2566', warrantyEnd:'25/04/2569', batteryDate:'-',
-    serial:'GEVSCAN-20230425', lifespan:'8', note:'' },
-  { code:'EQ-0007', name:'CBC Analyzer Sysmex XN-550', brand:'Sysmex', model:'XN-550', dept:'LAB (ห้องปฏิบัติการ)',
-    price:'1,200,000', year:'2565', status:'พร้อมใช้งาน', pm:'15/11/2568',
-    manufacturer:'Sysmex Corporation', supplier:'บ.ซีเมนส์เฮลธ์ จำกัด', techPhone:'087-890-1234',
-    receiveDate:'01/09/2565', warrantyEnd:'01/09/2568', batteryDate:'-',
-    serial:'SYS-20220901', lifespan:'10', note:'' },
-  { code:'EQ-0008', name:'Bilirubin Meter APEL BR-502', brand:'APEL', model:'BR-502', dept:'LAB (ห้องปฏิบัติการ)',
-    price:'85,000', year:'2564', status:'พร้อมใช้งาน', pm:'01/08/2568',
-    manufacturer:'APEL Co. Ltd.', supplier:'บ.ไบโอเชน จำกัด', techPhone:'088-901-2345',
-    receiveDate:'30/04/2564', warrantyEnd:'30/04/2567', batteryDate:'-',
-    serial:'10168', lifespan:'7', note:'' },
-  { code:'EQ-0009', name:'X-Ray Machine DR Carestream', brand:'Carestream', model:'DRX-Revolution', dept:'OPD (ผู้ป่วยนอก)',
-    price:'3,200,000', year:'2566', status:'พร้อมใช้งาน', pm:'20/06/2568',
-    manufacturer:'Carestream Health', supplier:'บ.แคร์สตรีม จำกัด', techPhone:'089-012-3456',
-    receiveDate:'30/03/2566', warrantyEnd:'30/03/2569', batteryDate:'-',
-    serial:'CSD-20230330', lifespan:'12', note:'' },
-  { code:'EQ-0010', name:'Infusion Pump B.Braun Perfusor', brand:'B.Braun', model:'Perfusor Space', dept:'IPD (ผู้ป่วยใน)',
-    price:'95,000', year:'2565', status:'ส่งซ่อมภายนอก', pm:'-',
-    manufacturer:'B.Braun Melsungen AG', supplier:'บ.บีบราวน์ (ไทย) จำกัด', techPhone:'088-901-2345',
-    receiveDate:'22/02/2565', warrantyEnd:'22/02/2568', batteryDate:'22/02/2565',
-    serial:'BBP-20220222', lifespan:'8', note:'ส่งซ่อมเซ็นเซอร์แรงดัน' },
-  { code:'EQ-0011', name:'Dental Unit Gnatus', brand:'Gnatus', model:'G-Tec', dept:'ทันตกรรม',
-    price:'420,000', year:'2566', status:'พร้อมใช้งาน', pm:'01/10/2568',
-    manufacturer:'Gnatus Equipamentos Medico', supplier:'บ.เดนทัลโปร จำกัด', techPhone:'091-234-5678',
-    receiveDate:'15/06/2566', warrantyEnd:'15/06/2569', batteryDate:'-',
-    serial:'GNA-20230615', lifespan:'15', note:'' },
-  { code:'EQ-0012', name:'Ultrasound Therapy Chattanooga', brand:'Chattanooga', model:'Intelect Mobile', dept:'กายภาพบำบัด',
-    price:'180,000', year:'2565', status:'พร้อมใช้งาน', pm:'01/09/2568',
-    manufacturer:'DJO Global', supplier:'บ.ฟิสิโอไทย จำกัด', techPhone:'092-345-6789',
-    receiveDate:'10/07/2565', warrantyEnd:'10/07/2568', batteryDate:'-',
-    serial:'CHAT-20220710', lifespan:'10', note:'' },
-  { code:'EQ-0013', name:'CTG Machine Edan F9', brand:'Edan', model:'F9 Express', dept:'LR (ห้องคลอด)',
-    price:'220,000', year:'2566', status:'พร้อมใช้งาน', pm:'15/08/2568',
-    manufacturer:'Edan Instruments Inc.', supplier:'บ.ไทยเมดิคอล จำกัด', techPhone:'082-345-6789',
-    receiveDate:'20/02/2566', warrantyEnd:'20/02/2569', batteryDate:'-',
-    serial:'EDAN-20230220', lifespan:'10', note:'ห้องคลอด' },
-];
+const equipmentData = []
 
 // ===== STATUS CONFIG =====
 const statusColors = {
@@ -2584,47 +2132,120 @@ const statusBgMap = {
 };
 
 // ===== RENDER TABLE =====
+// ===== EQUIPMENT TABLE WITH PAGINATION =====
+const EQUIP_PER_PAGE = 15;
+let _equipPage = 1;
+let _equipFiltered = null; // null = ใช้ equipmentData ทั้งหมด
+
 function renderEquipTable(data) {
+  _equipFiltered = data;
+  _equipPage = 1;
+  renderEquipPage();
+}
+
+function renderEquipPage() {
+  const data = _equipFiltered !== null ? _equipFiltered : equipmentData;
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / EQUIP_PER_PAGE));
+  if (_equipPage > totalPages) _equipPage = totalPages;
+
+  const start = (_equipPage - 1) * EQUIP_PER_PAGE;
+  const pageData = data.slice(start, start + EQUIP_PER_PAGE);
+
   const tbody = document.getElementById('equipBody');
-  tbody.innerHTML = data.map(e => {
-    const lifeAuto = e.receiveDate && e.receiveDate !== '-' ? calcLifespan(e.receiveDate) : (e.lifespan && e.lifespan !== '-' ? e.lifespan + ' ปี' : '-');
-    return `
-    <tr>
-      <td><strong style="color:var(--primary);">${e.code}</strong></td>
-      <td>
-        <div style="font-weight:600;">${e.name}</div>
-        <div style="font-size:11px;color:var(--text3);">${e.brand} / ${e.model}</div>
-      </td>
-      <td>${e.dept}</td>
-      <td style="text-align:right;">${e.price}</td>
-      <td style="text-align:center;font-size:12px;">${e.receiveDate || e.year}</td>
-      <td><span class="badge ${statusColors[e.status] || 'badge-gray'}"><span class="badge-dot"></span>${e.status}</span></td>
-      <td style="font-size:12px;">${lifeAuto}</td>
-      <td>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;">
-          <button class="icon-btn" onclick="viewEquipDetail('${e.code}')" title="ดูรายละเอียด" style="font-size:15px;">👁️</button>
-          <button class="icon-btn" onclick="showQR('${e.code}')" title="QR Code" style="font-size:15px;">🔲</button>
-          <button class="icon-btn edit" onclick="editEquip('${e.code}')" title="แก้ไข" style="font-size:15px;">✏️</button>
-          <button class="icon-btn del" onclick="deleteEquip('${e.code}')" title="ลบ" style="font-size:15px;">🗑️</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  if (!tbody) return;
+
+  if (pageData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3);">ยังไม่มีข้อมูลเครื่องมือ — กด ➕ เพิ่มเครื่องมือ เพื่อเริ่มต้น</td></tr>';
+  } else {
+    tbody.innerHTML = pageData.map(function(e) {
+      const lifeAuto = e.receiveDate && e.receiveDate !== '-'
+        ? calcLifespan(e.receiveDate)
+        : (e.lifespan && e.lifespan !== '-' ? e.lifespan + ' ปี' : '-');
+      return `<tr>
+        <td><strong style="color:var(--primary);">${e.code}</strong></td>
+        <td>
+          <div style="font-weight:600;">${e.name}</div>
+          <div style="font-size:11px;color:var(--text3);">${e.brand||''} ${e.model||''}</div>
+        </td>
+        <td>${e.dept}</td>
+        <td style="text-align:right;">${e.price||'-'}</td>
+        <td style="text-align:center;font-size:12px;">${e.receiveDate || e.year || '-'}</td>
+        <td><span class="badge ${statusColors[e.status]||'badge-gray'}"><span class="badge-dot"></span>${e.status}</span></td>
+        <td style="font-size:12px;">${lifeAuto}</td>
+        <td>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button class="icon-btn" onclick="viewEquipDetail('${e.code}')" title="ดูรายละเอียด" style="font-size:15px;">👁️</button>
+            <button class="icon-btn" onclick="showQR('${e.code}')" title="QR Code" style="font-size:15px;">🔲</button>
+            <button class="icon-btn edit" onclick="editEquip('${e.code}')" title="แก้ไข" style="font-size:15px;">✏️</button>
+            <button class="icon-btn del" onclick="deleteEquip('${e.code}')" title="ลบ" style="font-size:15px;">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // อัปเดต tableCount
+  const tc = document.getElementById('tableCount');
+  if (tc) {
+    if (total === 0) {
+      tc.textContent = 'ยังไม่มีข้อมูล';
+    } else if (total <= EQUIP_PER_PAGE) {
+      tc.textContent = 'แสดงทั้งหมด ' + total + ' รายการ';
+    } else {
+      tc.textContent = 'แสดง ' + (start+1) + '-' + Math.min(start+EQUIP_PER_PAGE, total) + ' จาก ' + total + ' รายการ';
+    }
+  }
+
+  // สร้าง pagination buttons
+  const pg = document.getElementById('tablePagination');
+  if (pg) {
+    if (totalPages <= 1) {
+      pg.innerHTML = '';
+    } else {
+      let html = `<button class="btn btn-outline btn-sm" onclick="goEquipPage(${_equipPage-1})" ${_equipPage<=1?'disabled':''}>← ก่อนหน้า</button>`;
+      // แสดงหมายเลขหน้า (สูงสุด 5 หน้า)
+      const startP = Math.max(1, _equipPage - 2);
+      const endP   = Math.min(totalPages, startP + 4);
+      for (let p = startP; p <= endP; p++) {
+        html += `<button class="btn btn-sm ${p===_equipPage?'btn-primary':'btn-outline'}" onclick="goEquipPage(${p})"
+          style="${p===_equipPage?'background:var(--primary);color:#fff;':''}">${p}</button>`;
+      }
+      html += `<button class="btn btn-outline btn-sm" onclick="goEquipPage(${_equipPage+1})" ${_equipPage>=totalPages?'disabled':''}>ถัดไป →</button>`;
+      pg.innerHTML = html;
+    }
+  }
+}
+
+function goEquipPage(p) {
+  const data = _equipFiltered !== null ? _equipFiltered : equipmentData;
+  const totalPages = Math.max(1, Math.ceil(data.length / EQUIP_PER_PAGE));
+  if (p < 1 || p > totalPages) return;
+  _equipPage = p;
+  renderEquipPage();
+  // scroll to top of table
+  const el = document.getElementById('equipBody');
+  if (el) el.closest('.table-wrap').scrollTop = 0;
 }
 
 renderEquipTable(equipmentData);
 
 function filterTable(q) {
-  const filtered = equipmentData.filter(e =>
-    e.name.toLowerCase().includes(q.toLowerCase()) ||
-    e.code.toLowerCase().includes(q.toLowerCase()) ||
-    e.dept.toLowerCase().includes(q.toLowerCase()) ||
-    e.brand.toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = q ? equipmentData.filter(function(e) {
+    const s = q.toLowerCase();
+    return (e.name||'').toLowerCase().includes(s) ||
+           (e.code||'').toLowerCase().includes(s) ||
+           (e.dept||'').toLowerCase().includes(s) ||
+           (e.brand||'').toLowerCase().includes(s);
+  }) : equipmentData;
   renderEquipTable(filtered);
 }
-function filterByDept(dept) { renderEquipTable(dept ? equipmentData.filter(e=>e.dept===dept) : equipmentData); }
-function filterByStatus(status) { renderEquipTable(status ? equipmentData.filter(e=>e.status===status) : equipmentData); }
+function filterByDept(dept) {
+  renderEquipTable(dept ? equipmentData.filter(function(e){return e.dept===dept;}) : equipmentData);
+}
+function filterByStatus(status) {
+  renderEquipTable(status ? equipmentData.filter(function(e){return e.status===status;}) : equipmentData);
+}
 
 // ===== QR CODE MODAL =====
 // แปลงวันที่ทุกรูปแบบ → dd/mm/ปีพ.ศ. สำหรับแสดงในสติ้กเกอร์
@@ -3170,36 +2791,7 @@ function getHistory(code) {
 }
 
 // Seed sample history for demo equipment
-(function seedHistory() {
-  const h = getHistory('EQ-0001');
-  h.repair = [
-    { id:'R001', date:'15/03/2566', detail:'เปลี่ยน valve exhaust ชำรุด', by:'สมชาย ใจดี', cost:'4,500', status:'เสร็จสิ้น', note:'' },
-    { id:'R002', date:'20/10/2567', detail:'เซ็นเซอร์ flow ผิดพลาด ค่าคลาดเคลื่อน', by:'บ.เมดทรอนิค', cost:'12,000', status:'เสร็จสิ้น', note:'ส่งซ่อมภายนอก 7 วัน' },
-  ];
-  h.pm = [
-    { id:'P001', date:'15/03/2565', detail:'PM ประจำปี ครั้งที่ 1 เปลี่ยนฟิลเตอร์+น้ำมัน', by:'สมชาย ใจดี', note:'ผลปกติ' },
-    { id:'P002', date:'15/03/2566', detail:'PM ประจำปี ครั้งที่ 2 ทำความสะอาดระบบ', by:'สมชาย ใจดี', note:'ผลปกติ' },
-    { id:'P003', date:'15/03/2567', detail:'PM ประจำปี ครั้งที่ 3 เปลี่ยน battery backup', by:'บ.เมดทรอนิค', note:'' },
-  ];
-  h.calib = [
-    { id:'C001', date:'15/03/2565', nextDate:'15/03/2566', by:'NIMT', result:'ผ่าน', note:'' },
-    { id:'C002', date:'15/03/2566', nextDate:'15/03/2567', by:'NIMT', result:'ผ่าน', note:'' },
-    { id:'C003', date:'10/04/2567', nextDate:'10/04/2568', by:'บ.เมดทรอนิค', result:'ผ่าน (มีเงื่อนไข)', note:'Tidal volume +2% ยังอยู่ในเกณฑ์' },
-  ];
-  h.borrow = [
-    { id:'B001', dateOut:'01/08/2566', dateIn:'05/08/2566', borrower:'น.ส.อรทัย', dept:'ER (ห้องฉุกเฉิน)', reason:'ผู้ป่วยวิกฤต', status:'คืนแล้ว', condition:'ปกติ' },
-    { id:'B002', dateOut:'20/01/2568', dateIn:'-', borrower:'นพ.วิชัย', dept:'IPD (ผู้ป่วยใน)', reason:'ใช้งานชั่วคราว', status:'ยังไม่คืน', condition:'-' },
-  ];
-
-  const h2 = getHistory('EQ-0007');
-  h2.repair = [{ id:'R001', date:'10/05/2566', detail:'ระบบ sampling ตัน ทำความสะอาด', by:'บ.ซีเมนส์เฮลธ์', cost:'3,200', status:'เสร็จสิ้น', note:'' }];
-  h2.pm = [
-    { id:'P001', date:'01/09/2566', detail:'PM ประจำปี เปลี่ยน reagent lines', by:'บ.ซีเมนส์เฮลธ์', note:'ผ่าน' },
-    { id:'P002', date:'01/09/2567', detail:'PM ประจำปี ครั้งที่ 2', by:'บ.ซีเมนส์เฮลธ์', note:'ผ่าน' },
-  ];
-  h2.calib = [{ id:'C001', date:'15/11/2567', nextDate:'15/11/2568', by:'บ.ซีเมนส์เฮลธ์', result:'ผ่าน', note:'' }];
-  h2.borrow = [];
-})();
+// seed data removed — system starts empty
 
 // ===== TAB SWITCHER =====
 function switchVeqTab(el, targetId) {
@@ -3710,18 +3302,7 @@ function showToast(msg) {
 
 
 // ===== CALIBRATION SYSTEM =====
-let calibData = [
-  { id:'CAL-001', equipCode:'EQ-0005', equipName:'Autoclave 134°C (CSR-01)', dept:'ส่วนกลาง',
-    calibDate:'02/06/2567', nextDate:'02/06/2568', by:'NIMT / ภายนอก', result:'ผ่าน', note:'ผลการทดสอบผ่านมาตรฐาน ISO 17025', files:[] },
-  { id:'CAL-002', equipCode:'EQ-0007', equipName:'CBC Analyzer Sysmex XN-550', dept:'LAB (ห้องปฏิบัติการ)',
-    calibDate:'15/11/2567', nextDate:'15/11/2568', by:'บริษัท Sysmex Thailand', result:'ผ่าน', note:'', files:[] },
-  { id:'CAL-003', equipCode:'EQ-0002', equipName:'Vital Signs Monitor Mindray', dept:'ER (ห้องฉุกเฉิน)',
-    calibDate:'10/06/2567', nextDate:'10/06/2568', by:'บริษัทตัวแทน', result:'ผ่าน (มีเงื่อนไข)', note:'BP module ค่าคลาดเคลื่อนเล็กน้อย แนะนำตรวจซ้ำใน 6 เดือน', files:[] },
-  { id:'CAL-004', equipCode:'EQ-0004', equipName:'EKG Machine 12-Lead', dept:'OPD (ผู้ป่วยนอก)',
-    calibDate:'05/06/2567', nextDate:'05/06/2568', by:'ช่างภายใน', result:'ผ่าน', note:'', files:[] },
-  { id:'CAL-005', equipCode:'EQ-0008', equipName:'Bilirubin Meter APEL BR-502', dept:'LAB (ห้องปฏิบัติการ)',
-    calibDate:'20/01/2568', nextDate:'20/01/2569', by:'บ.ไบโอเชน จำกัด', result:'ผ่าน', note:'', files:[] },
-];
+let calibData = []
 let calibFilesTemp = []; // temp storage before save
 
 function getCalibStatus(nextDateStr) {
@@ -4305,7 +3886,297 @@ async function syncBorrowToSheet(borrowRecord) {
 }
 
 
-// ===== CLEAR DATA (ล้างข้อมูลตัวอย่าง เพื่อเริ่มใช้งานจริง) =====
+
+
+// ===== DYNAMIC STAT CARDS =====
+function updateDashboardStats() {
+  const total = equipmentData.length;
+  const ready = equipmentData.filter(e => e.status === 'พร้อมใช้งาน').length;
+  const repair = equipmentData.filter(e => e.status === 'กำลังซ่อม' || e.status === 'ส่งซ่อม').length;
+  const pct = total > 0 ? Math.round(ready/total*100) : 0;
+
+  // นับครบกำหนดสอบเทียบ (ภายใน 30 วัน หรือเกินแล้ว)
+  const calibDue = calibData.filter(c => {
+    const st = getCalibStatus(c.nextDate);
+    return st === 'over' || st === 'warn';
+  }).length;
+
+  const se = document.getElementById('statTotal');
+  if (se) { se.textContent = total; document.getElementById('statTotalSub').textContent = total > 0 ? '✅ รายการในทะเบียน' : 'เริ่มเพิ่มข้อมูลได้เลย'; }
+  const sr = document.getElementById('statReady');
+  if (sr) { sr.textContent = ready; document.getElementById('statReadySub').textContent = pct + '% ของทั้งหมด'; }
+  const srp = document.getElementById('statRepair');
+  if (srp) { srp.textContent = repair; document.getElementById('statRepairSub').textContent = 'รายการ'; }
+  const sc = document.getElementById('statCalib');
+  if (sc) { sc.textContent = calibDue; document.getElementById('statCalibSub').textContent = calibDue > 0 ? 'ต้องดำเนินการด่วน' : 'ทุกเครื่องปกติ'; }
+}
+
+// ===== REPORT GENERATORS =====
+function generateRepairReport() {
+  const el = document.getElementById('reportSummaryBody');
+  if (!el) return;
+  const allRepairs = [];
+  Object.entries(equipHistory).forEach(([code, h]) => {
+    (h.repair||[]).forEach(r => {
+      const e = equipmentData.find(x => x.code === code);
+      allRepairs.push({ ...r, equipCode: code, equipName: e ? e.name : code, dept: e ? e.dept : '-' });
+    });
+  });
+  if (allRepairs.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);"><div style="font-size:48px;margin-bottom:12px;">🔧</div><div>ยังไม่มีข้อมูลการซ่อม</div></div>';
+    return;
+  }
+  const totalCost = allRepairs.reduce((s, r) => {
+    const n = parseFloat((r.cost||'0').replace(/[^0-9.]/g,''));
+    return s + (isNaN(n) ? 0 : n);
+  }, 0);
+  el.innerHTML = `
+    <div class="alert alert-info">💰 ค่าซ่อมบำรุงรวมทั้งหมด: <strong>${totalCost.toLocaleString('th-TH')} บาท</strong> จาก ${allRepairs.length} ครั้ง</div>
+    <div class="table-wrap" style="margin-top:16px;">
+      <table style="font-size:13px;">
+        <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>แผนก</th><th>รายละเอียด</th><th>วันที่</th><th>ค่าใช้จ่าย</th><th>สถานะ</th></tr></thead>
+        <tbody>${allRepairs.map(r => `<tr><td>${r.equipCode}</td><td>${r.equipName}</td><td>${r.dept}</td><td>${r.detail||'-'}</td><td>${r.date||'-'}</td><td>${r.cost||'-'}</td><td><span class="badge ${r.status==='เสร็จสิ้น'?'badge-success':'badge-warning'}">${r.status||'-'}</span></td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function generateLifespanReport() {
+  const el = document.getElementById('reportSummaryBody');
+  if (!el) return;
+  if (equipmentData.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);"><div style="font-size:48px;margin-bottom:12px;">📊</div><div>ยังไม่มีข้อมูลเครื่องมือ</div></div>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="font-weight:600;margin-bottom:12px;">รายงานอายุการใช้งานเครื่องมือแพทย์ (${equipmentData.length} รายการ)</div>
+    <div class="table-wrap">
+      <table style="font-size:13px;">
+        <thead><tr><th>รหัส</th><th>ชื่อเครื่องมือ</th><th>แผนก</th><th>วันรับเครื่อง</th><th>อายุการใช้งาน</th><th>สถานะ</th></tr></thead>
+        <tbody>${equipmentData.map(e => {
+          const life = e.receiveDate && e.receiveDate !== '-' ? calcLifespan(e.receiveDate) : '-';
+          return `<tr><td>${e.code}</td><td>${e.name}</td><td>${e.dept}</td><td>${e.receiveDate||'-'}</td><td>${life}</td><td><span class="badge ${e.status==='พร้อมใช้งาน'?'badge-success':e.status.includes('ซ่อม')?'badge-warning':'badge-danger'}">${e.status}</span></td></tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function generatePMReport() {
+  const el = document.getElementById('reportSummaryBody');
+  if (!el) return;
+  const allPM = [];
+  Object.entries(equipHistory).forEach(([code, h]) => {
+    (h.pm||[]).forEach(p => {
+      const e = equipmentData.find(x => x.code === code);
+      allPM.push({ ...p, equipCode: code, equipName: e ? e.name : code, dept: e ? e.dept : '-' });
+    });
+  });
+  if (allPM.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);"><div style="font-size:48px;margin-bottom:12px;">📋</div><div>ยังไม่มีข้อมูล PM</div></div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="alert alert-info">📋 PM ทั้งหมด <strong>${allPM.length} ครั้ง</strong> จาก ${[...new Set(allPM.map(p=>p.equipCode))].length} เครื่อง</div>
+    <div class="table-wrap" style="margin-top:16px;">
+      <table style="font-size:13px;">
+        <thead><tr><th>วันที่</th><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>แผนก</th><th>รายละเอียด</th><th>ดำเนินการโดย</th></tr></thead>
+        <tbody>${allPM.map(p => `<tr><td>${p.date||'-'}</td><td>${p.equipCode}</td><td>${p.equipName}</td><td>${p.dept}</td><td>${p.detail||'-'}</td><td>${p.by||'-'}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+
+function renderDashboard() {
+  // Repair list
+  const repairEl = document.getElementById('dashRepairList');
+  if (repairEl) {
+    const repairs = [];
+    Object.entries(equipHistory).forEach(([code, h]) => {
+      (h.repair||[]).forEach(r => {
+        const e = equipmentData.find(x => x.code === code);
+        repairs.push({ ...r, equipCode: code, equipName: e ? e.name : code, dept: e ? e.dept : '-' });
+      });
+    });
+    repairs.sort((a,b) => b.id.localeCompare(a.id));
+    const top = repairs.slice(0, 4);
+    if (top.length === 0) {
+      repairEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">ยังไม่มีข้อมูลการซ่อม</div>';
+    } else {
+      repairEl.innerHTML = top.map(r => {
+        const badge = r.status === 'เสร็จสิ้น'
+          ? '<span class="badge badge-success">✅ เสร็จแล้ว</span>'
+          : r.status === 'รอดำเนินการ'
+          ? '<span class="badge badge-danger">🆘 รอดำเนินการ</span>'
+          : '<span class="badge badge-warning">🔄 กำลังซ่อม</span>';
+        return `<div class="repair-item">
+          <div class="repair-icon" style="background:#EBF5FF;">🔧</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13px;">${r.equipName}</div>
+            <div style="font-size:12px;color:var(--text3);">${r.dept} • ${r.detail||'-'}</div>
+          </div>${badge}</div>`;
+      }).join('');
+    }
+  }
+
+  // Calib list
+  const calibEl = document.getElementById('dashCalibList');
+  if (calibEl) {
+    const now = new Date();
+    const soon = calibData.filter(c => {
+      const iso = thaiDateToISO(c.nextDate);
+      if (!iso) return false;
+      const diff = (new Date(iso) - now) / (1000*60*60*24);
+      return diff <= 60;
+    }).sort((a,b) => {
+      const da = new Date(thaiDateToISO(a.nextDate)||'9999');
+      const db = new Date(thaiDateToISO(b.nextDate)||'9999');
+      return da - db;
+    }).slice(0, 5);
+
+    if (soon.length === 0) {
+      calibEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">ยังไม่มีข้อมูลสอบเทียบ</div>';
+    } else {
+      calibEl.innerHTML = '<table><thead><tr><th>เครื่องมือ</th><th>วันครบกำหนด</th><th>สถานะ</th></tr></thead><tbody>'
+        + soon.map(c => {
+          const st = getCalibStatus(c.nextDate);
+          const badge = st === 'over'
+            ? '<span class="badge badge-danger"><span class="badge-dot"></span>เกินกำหนด</span>'
+            : st === 'warn'
+            ? '<span class="badge badge-warning"><span class="badge-dot"></span>ใกล้ครบกำหนด</span>'
+            : '<span class="badge badge-success"><span class="badge-dot"></span>ปกติ</span>';
+          return `<tr><td><div style="font-weight:600;font-size:13px;">${c.equipName}</div><div style="font-size:11px;color:var(--text3);">${c.dept}</div></td><td><span style="font-size:12px;font-weight:700;">${c.nextDate}</span></td><td>${badge}</td></tr>`;
+        }).join('') + '</tbody></table>';
+    }
+  }
+
+  // Dept summary
+  const deptEl = document.getElementById('dashDeptSummary');
+  if (deptEl) {
+    if (equipmentData.length === 0) {
+      deptEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">เพิ่มข้อมูลเครื่องมือเพื่อดูสรุป</div>';
+    } else {
+      const deptMap = {};
+      equipmentData.forEach(e => {
+        const d = (e.dept||'ไม่ระบุ').replace(/\s*\(.*?\)/g,'').trim();
+        if (!deptMap[d]) deptMap[d] = { total:0, ready:0 };
+        deptMap[d].total++;
+        if (e.status === 'พร้อมใช้งาน') deptMap[d].ready++;
+      });
+      const depts = Object.entries(deptMap).sort((a,b) => b[1].total - a[1].total).slice(0,5);
+      deptEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:14px;">' +
+        depts.map(([name, d]) => {
+          const pct = Math.round(d.ready / d.total * 100);
+          const color = pct >= 90 ? 'var(--success)' : pct >= 70 ? 'var(--primary)' : 'var(--warning)';
+          return `<div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
+              <span style="font-weight:600;">${name}</span>
+              <span style="color:var(--text3);">${d.total} เครื่อง</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color};"></div></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px;">พร้อมใช้งาน ${pct}%</div>
+          </div>`;
+        }).join('') + '</div>';
+    }
+  }
+}
+
+function renderRepairPage() {
+  const allRepairs = [];
+  Object.entries(equipHistory).forEach(([code, h]) => {
+    (h.repair||[]).forEach(r => {
+      const e = equipmentData.find(x => x.code === code);
+      allRepairs.push({ ...r, equipCode: code, equipName: e ? e.name : code, dept: e ? e.dept : '-' });
+    });
+  });
+  allRepairs.sort((a,b) => b.id.localeCompare(a.id));
+
+  const pending = allRepairs.filter(r => r.status === 'รอดำเนินการ');
+  const inprog  = allRepairs.filter(r => r.status === 'กำลังซ่อม' || r.status === 'รอวัสดุ' || r.status === 'ส่งซ่อมนอก');
+  const done    = allRepairs.filter(r => r.status === 'เสร็จสิ้น');
+
+  const badge = document.getElementById('repairBadge');
+  if (badge) badge.textContent = pending.length;
+
+  const pb = document.getElementById('repairPendingBody');
+  if (pb) pb.innerHTML = pending.length ? pending.map(r =>
+    `<tr><td><strong style="color:var(--primary);">${r.equipCode}</strong></td><td>${r.equipName}</td><td>${r.detail||'-'}</td><td>${r.dept}</td><td>${r.by||'-'}</td><td>${r.date||'-'}</td><td><span class="badge badge-danger">🆘 รอดำเนินการ</span></td></tr>`
+  ).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่รอดำเนินการ</td></tr>';
+
+  const ib = document.getElementById('repairInprogressBody');
+  if (ib) ib.innerHTML = inprog.length ? inprog.map(r =>
+    `<tr><td><strong style="color:var(--primary);">${r.equipCode}</strong></td><td>${r.equipName}</td><td>${r.detail||'-'}</td><td>${r.by||'-'}</td><td>${r.date||'-'}</td><td><span class="badge badge-warning">🔄 กำลังดำเนินการ</span></td></tr>`
+  ).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ไม่มีงานที่กำลังดำเนินการ</td></tr>';
+
+  const db = document.getElementById('repairDoneBody');
+  if (db) db.innerHTML = done.length ? done.map(r =>
+    `<tr><td><strong style="color:var(--primary);">${r.equipCode}</strong></td><td>${r.equipName}</td><td>${r.detail||'-'}</td><td style="text-align:center;">${r.note&&r.note.includes('Downtime:') ? r.note.split('Downtime:')[1].split('|')[0].trim() : '-'}</td><td>${r.cost||'-'}</td><td>${r.date||'-'}</td></tr>`
+  ).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่เสร็จสิ้น</td></tr>';
+}
+
+function renderPMPage() {
+  // PM Plan — แสดงจากทะเบียนเครื่องมือ
+  const planBody = document.getElementById('pmPlanBody');
+  if (planBody) {
+    if (equipmentData.length === 0) {
+      planBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">เพิ่มข้อมูลเครื่องมือเพื่อแสดงแผน PM</td></tr>';
+    } else {
+      planBody.innerHTML = equipmentData.map(e =>
+        `<tr><td><strong style="color:var(--primary);">${e.code}</strong></td><td>${e.name}</td><td>${e.dept}</td><td>${e.pmFreq||'รายปี'}</td><td>${e.receiveDate||'-'}</td><td><span class="badge badge-info">📅 กำหนดการ</span></td></tr>`
+      ).join('');
+    }
+  }
+
+  // PM History
+  const histBody = document.getElementById('pmHistoryBody');
+  if (histBody) {
+    const allPM = [];
+    Object.entries(equipHistory).forEach(([code, h]) => {
+      (h.pm||[]).forEach(p => {
+        const e = equipmentData.find(x => x.code === code);
+        allPM.push({ ...p, equipCode: code, equipName: e ? e.name : code, dept: e ? e.dept : '-' });
+      });
+    });
+    allPM.sort((a,b) => b.id.localeCompare(a.id));
+    histBody.innerHTML = allPM.length ? allPM.map(p =>
+      `<tr><td>${p.date||'-'}</td><td><strong>${p.equipCode}</strong><br><span style="font-size:11px;color:var(--text3);">${p.equipName}</span></td><td>${p.dept}</td><td>${p.detail||'-'}</td><td>${p.by||'-'}</td><td>${p.note&&p.note.includes('ค่าใช้จ่าย:') ? p.note.split('ค่าใช้จ่าย:')[1].split('|')[0].trim() : '-'}</td><td><span class="badge badge-success">✅ ผ่าน</span></td></tr>`
+    ).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีประวัติการบำรุงรักษา</td></tr>';
+  }
+}
+
+function renderBorrowPage() {
+  const allBorrows = [];
+  Object.entries(equipHistory).forEach(([code, h]) => {
+    (h.borrow||[]).forEach(b => {
+      const e = equipmentData.find(x => x.code === code);
+      allBorrows.push({ ...b, equipCode: code, equipName: e ? e.name : code });
+    });
+  });
+
+  const active = allBorrows.filter(b => b.status === 'ยังไม่คืน');
+  const hist   = allBorrows.filter(b => b.status !== 'ยังไม่คืน');
+
+  const ab = document.getElementById('borrowActiveBody');
+  if (ab) ab.innerHTML = active.length ? active.map(b =>
+    `<tr><td>${b.equipName}</td><td>${b.dept||'-'}</td><td>${b.borrower||'-'}</td><td>${b.dateOut||'-'}</td><td>${b.dateIn||'-'}</td><td><span class="badge badge-info">📤 ออกไปแล้ว</span></td><td><button class="btn btn-success btn-sm" onclick="returnBorrow('${b.id}','${b.equipCode}')">✅ รับคืน</button></td></tr>`
+  ).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีรายการยืมที่ค้างอยู่</td></tr>';
+
+  const hb = document.getElementById('borrowHistoryBody');
+  if (hb) hb.innerHTML = hist.length ? hist.map(b =>
+    `<tr><td>${b.equipName}</td><td>${b.dept||'-'}</td><td>${b.borrower||'-'}</td><td>${b.dateOut||'-'}</td><td>${b.dateIn||'-'}</td><td><span class="badge badge-success">✅ คืนแล้ว</span></td></tr>`
+  ).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีประวัติการยืม-คืน</td></tr>';
+}
+
+function returnBorrow(id, code) {
+  if (!confirm('ยืนยันการรับคืนเครื่องมือ?')) return;
+  const hist = getHistory(code);
+  const b = hist.borrow.find(x => x.id === id);
+  if (b) {
+    b.status = 'คืนแล้ว';
+    b.dateIn = new Date().toLocaleDateString('th-TH', {day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+  renderBorrowPage();
+  showToast('✅ บันทึกการรับคืนแล้ว');
+}
+
 let _clearDataType = '';
 
 function updateSettingsCounts() {
@@ -4368,10 +4239,19 @@ function executeClearData() {
   }
 
   if (type === 'all') {
-    // reset repair badge
+    // ล้าง equipHistory ทั้งหมด
+    Object.keys(equipHistory).forEach(k => delete equipHistory[k]);
+    // reset badge
     const badge = document.getElementById('repairBadge');
     if (badge) badge.textContent = '0';
   }
+
+  // re-render ทุกหน้า
+  renderDashboard();
+  updateDashboardStats();
+  renderRepairPage();
+  renderPMPage();
+  renderBorrowPage();
 
   closeModal('clearDataModal');
   updateSettingsCounts();
@@ -4393,9 +4273,13 @@ function executeClearData() {
 const _origShowPage = showPage;
 showPage = function(id) {
   _origShowPage(id);
-  if (id === 'settings') {
-    setTimeout(() => { updateSettingsCounts(); renderUserMgmt(); }, 150);
-  }
+  setTimeout(function() {
+    if (id === 'dashboard')   { renderDashboard(); updateDashboardStats(); }
+    if (id === 'maintenance') renderRepairPage();
+    if (id === 'pm')          renderPMPage();
+    if (id === 'borrow')      renderBorrowPage();
+    if (id === 'settings')    { updateSettingsCounts(); renderUserMgmt(); }
+  }, 100);
 };
 
 
@@ -4626,6 +4510,9 @@ function deleteUser(id) {
 
 // เรียก checkSession ตอนโหลด
 checkSession();
+
+// render dashboard ทันทีตอนเปิด
+setTimeout(function() { renderDashboard(); updateDashboardStats(); }, 200);
 
 // ===== INIT =====
 createSyncIndicator();
