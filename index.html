@@ -2170,7 +2170,7 @@ function renderEquipPage() {
         </td>
         <td>${e.dept}</td>
         <td style="text-align:right;">${e.price||'-'}</td>
-        <td style="text-align:center;font-size:12px;">${e.receiveDate || e.year || '-'}</td>
+        <td style="text-align:center;font-size:12px;">${formatStickerDate(e.receiveDate || e.year || '-')}</td>
         <td><span class="badge ${statusColors[e.status]||'badge-gray'}"><span class="badge-dot"></span>${e.status}</span></td>
         <td style="font-size:12px;">${lifeAuto}</td>
         <td>
@@ -2488,11 +2488,11 @@ async function printQRSticker() {
     <div class="dates">
       <div>
         <div class="date-lbl">รับ:</div>
-        <div class="date-val">${e.receiveDate || '-'}</div>
+        <div class="date-val">${formatStickerDate(e.receiveDate)}</div>
       </div>
       <div style="text-align:right;">
         <div class="date-lbl">ประกัน:</div>
-        <div class="date-val">${e.warrantyEnd || '-'}</div>
+        <div class="date-val">${formatStickerDate(e.warrantyEnd)}</div>
       </div>
     </div>
   </div>
@@ -2837,9 +2837,9 @@ function viewEquipDetail(code) {
     ['🏪 ผู้จำหน่าย', e.supplier || '-'],
     ['📞 เบอร์ช่าง', e.techPhone || '-'],
     ['💰 ราคา', e.price ? e.price + ' บาท' : '-'],
-    ['📅 วันที่รับเครื่อง', e.receiveDate || '-'],
-    ['🛡️ วันหมดประกัน', e.warrantyEnd || '-'],
-    ['🔋 เปลี่ยนแบตล่าสุด', e.batteryDate || '-'],
+    ['📅 วันที่รับเครื่อง', formatStickerDate(e.receiveDate)],
+    ['🛡️ วันหมดประกัน', formatStickerDate(e.warrantyEnd)],
+    ['🔋 เปลี่ยนแบตล่าสุด', formatStickerDate(e.batteryDate)],
     ['📆 ความถี่ PM', e.pmFreq || 'รายปี'],
     ['🏷️ แหล่งงบประมาณ', e.source || '-'],
   ];
