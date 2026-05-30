@@ -2938,22 +2938,23 @@ function renderHistoryRepair(code) {
   const el = document.getElementById('repairHistBody');
   document.getElementById('repairHistCount').textContent = `ประวัติการซ่อมทั้งหมด ${hist.length} ครั้ง`;
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติการซ่อม'); return; }
-  const cols = ['วันที่','รายละเอียด','ดำเนินการโดย','Downtime','ค่าใช้จ่าย','สถานะ',''];
-  const widths = '90px 1fr 120px 70px 80px 90px 60px';
+  const cols = ['วันที่ซ่อม','รายละเอียด','ดำเนินการโดย','สถานะ','ค่าใช้จ่าย','Downtime รวม','หมายเหตุ',''];
+  const widths = '90px 1fr 110px 100px 80px 80px 100px 60px';
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => {
       const rawCost = cleanVal(r.cost);
       const costDisplay = rawCost && rawCost !== '0' ? rawCost+(rawCost.includes('บ')?'':' บ.') : '-';
       const status = cleanVal(r.status) || 'รอดำเนินการ';
-      const sb = status==='เสร็จสิ้น' ? 'badge-success' : 'badge-warning';
+      const sb = status==='เสร็จสิ้น' ? 'badge-success' : status.includes('กำลัง') ? 'badge-warning' : status.includes('รอ') ? 'badge-danger' : 'badge-info';
       return histRow([
         histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
-        histCell(`<div style="font-weight:600;">${cleanOrDash(r.detail)}</div>${cleanVal(r.note)?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${cleanVal(r.note)}</div>`:''}`),
+        histCell(`<div style="font-weight:600;">${cleanOrDash(r.detail)}</div>`),
         histCell(cleanOrDash(r.by), 'color:var(--text2);'),
-        histCell(cleanOrDash(r.downtimeDays), 'color:var(--danger);font-weight:600;text-align:center;'),
-        histCell(costDisplay, 'color:var(--danger);font-weight:600;'),
         histCell(`<span class="badge ${sb}">${status}</span>`),
+        histCell(costDisplay, 'color:var(--danger);font-weight:600;'),
+        histCell(cleanOrDash(r.downtimeDays), 'color:var(--info);font-weight:600;text-align:center;'),
+        histCell(cleanOrDash(r.note), 'color:var(--text3);font-size:11px;'),
         histCell(`<div style="display:flex;gap:3px;">
           <button class="icon-btn edit" onclick="editHistEntry('repair','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
           <button class="icon-btn del" onclick="deleteHistEntry('repair','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
