@@ -1940,6 +1940,45 @@
   </div>
 </div>
 
+<!-- ===== UPDATE REPAIR STATUS MODAL ===== -->
+<div class="modal-overlay" id="updateRepairModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#E07B00,#F39C12);border-radius:12px 12px 0 0;">
+      <span style="font-size:20px;">🔄</span>
+      <div>
+        <div style="color:#fff;font-size:16px;font-weight:700;">อัปเดตสถานะการซ่อม</div>
+        <div id="updateRepairSubtitle" style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:2px;"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal('updateRepairModal')" style="background:rgba(255,255,255,0.15);color:#fff;margin-left:auto;">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="updateRepairId">
+      <input type="hidden" id="updateRepairEquipCode">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>สถานะใหม่ *</label>
+          <select id="updateRepairStatus">
+            <option value="รอดำเนินการ">🆘 รอดำเนินการ</option>
+            <option value="กำลังซ่อม">🔄 กำลังซ่อม</option>
+            <option value="รอวัสดุ">📦 รอวัสดุ/อะไหล่</option>
+            <option value="ส่งซ่อมนอก">🚚 ส่งซ่อมภายนอก</option>
+            <option value="เสร็จสิ้น">✅ เสร็จสิ้น</option>
+          </select>
+        </div>
+        <div class="form-group"><label>ค่าซ่อม (บาท)</label><input type="number" id="updateRepairCost" placeholder="0" min="0"></div>
+        <div class="form-group"><label>วันที่เสร็จ</label><input type="date" id="updateRepairFinishDate"></div>
+        <div class="form-group full"><label>หมายเหตุ / รายละเอียดการซ่อม</label>
+          <textarea id="updateRepairNote" placeholder="รายละเอียดการซ่อมที่ดำเนินการ..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('updateRepairModal')">ยกเลิก</button>
+      <button class="btn btn-warning" onclick="saveRepairStatus()" style="background:var(--warning);color:#fff;">💾 บันทึกสถานะ</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" style="
   position:fixed; bottom:24px; right:24px;
@@ -2769,8 +2808,13 @@ function submitPM() {
 
   const hist = getHistory(code);
   hist.pm.unshift({
-    id: pmId, date: thDate, detail, by,
-    note: (cost ? `ค่าใช้จ่าย: ${pmRecord.cost} บาท` : '') + (note ? ` | ${note}` : ''),
+    id: pmId,
+    date: thDate,
+    detail: detail,
+    by: by,
+    result: pmRecord.result,
+    cost: pmRecord.cost,
+    note: note,
   });
 
   syncPMToSheet(pmRecord);  // ← sync to Google Sheets
@@ -2894,14 +2938,15 @@ function renderHistoryRepair(code) {
   const el = document.getElementById('repairHistBody');
   document.getElementById('repairHistCount').textContent = `ประวัติการซ่อมทั้งหมด ${hist.length} ครั้ง`;
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติการซ่อม'); return; }
-  const cols = ['วันที่','รายละเอียด','ดำเนินการโดย','ค่าใช้จ่าย','สถานะ'];
-  const widths = '100px 1fr 130px 90px 90px';
+  const cols = ['วันที่','รายละเอียด','ดำเนินการโดย','Downtime','ค่าใช้จ่าย','สถานะ'];
+  const widths = '90px 1fr 120px 80px 80px 90px';
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => histRow([
       histCell(`<span style="font-size:11px;">${r.date}</span>`),
       histCell(`<div style="font-weight:600;">${r.detail}</div>${r.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${r.note}</div>`:''}`),
-      histCell(r.by, 'color:var(--text2);'),
+      histCell(r.by||'-', 'color:var(--text2);'),
+      histCell(r.downtimeDays||'-', 'color:var(--danger);font-weight:600;text-align:center;'),
       histCell(r.cost ? r.cost+' บ.' : '-', 'color:var(--danger);font-weight:600;'),
       histCell(`<span class="badge ${r.status==='เสร็จสิ้น'?'badge-success':'badge-warning'}">${r.status}</span>`),
     ], widths)).join('')}
@@ -2914,15 +2959,17 @@ function renderHistoryPM(code) {
   const el = document.getElementById('pmHistBody');
   document.getElementById('pmHistCount').textContent = `ประวัติบำรุงรักษาทั้งหมด ${hist.length} ครั้ง`;
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติบำรุงรักษา'); return; }
-  const cols = ['วันที่','รายละเอียด PM','ดำเนินการโดย','หมายเหตุ'];
-  const widths = '100px 1fr 140px 140px';
+  const cols = ['วันที่','รายละเอียด PM','ดำเนินการโดย','ค่าใช้จ่าย','ผล','หมายเหตุ'];
+  const widths = '90px 1fr 130px 90px 90px 120px';
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => histRow([
       histCell(`<span style="font-size:11px;">${r.date}</span>`),
-      histCell(`<div style="font-weight:600;">${r.detail}</div>`),
-      histCell(r.by, 'color:var(--text2);'),
-      histCell(r.note || '-', 'color:var(--text3);'),
+      histCell(`<div style="font-weight:600;">${r.detail||'-'}</div>`),
+      histCell(r.by||'-', 'color:var(--text2);'),
+      histCell(r.cost ? r.cost+' บ.' : '-', 'color:var(--success);font-weight:600;'),
+      histCell(`<span class="badge ${(r.result||'').includes('ผ่าน')?'badge-success':'badge-warning'}">${r.result||'ผ่าน'}</span>`),
+      histCell(r.note||'-', 'color:var(--text3);font-size:11px;'),
     ], widths)).join('')}
   </div>`;
 }
@@ -3005,6 +3052,14 @@ function addRepairHistFromView() {
     <div class="form-group"><label>สถานะ</label>
       <select id="hi_status"><option>เสร็จสิ้น</option><option>กำลังดำเนินการ</option><option>รอชิ้นส่วน</option></select>
     </div>
+    <div class="form-group"><label>⏱️ Downtime เริ่ม (วันที่เครื่องหยุด)</label><input type="date" id="hi_dtstart"></div>
+    <div class="form-group"><label>⏱️ Downtime สิ้นสุด (วันที่กลับมาใช้)</label><input type="date" id="hi_dtend" onchange="calcHistDowntime()"></div>
+    <div class="form-group full">
+      <label>Downtime รวม (วัน)</label>
+      <div id="hi_dtdisplay" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#F4F8FC;font-size:13px;font-weight:700;color:var(--danger);">
+        — กรอกวันเริ่ม-สิ้นสุดก่อน —
+      </div>
+    </div>
     <div class="form-group full"><label>หมายเหตุ</label><textarea id="hi_note" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>`;
   openModal('addHistModal');
 }
@@ -3063,6 +3118,26 @@ function addBorrowHistFromView() {
   openModal('addHistModal');
 }
 
+function calcHistDowntime() {
+  const s = document.getElementById('hi_dtstart')?.value;
+  const e = document.getElementById('hi_dtend')?.value;
+  const el = document.getElementById('hi_dtdisplay');
+  if (!el) return;
+  if (s && e) {
+    const days = Math.round((new Date(e) - new Date(s)) / (1000*60*60*24));
+    if (days >= 0) {
+      el.textContent = days + ' วัน';
+      el.style.color = days === 0 ? 'var(--success)' : days <= 3 ? 'var(--warning)' : 'var(--danger)';
+    } else {
+      el.textContent = '⚠️ วันสิ้นสุดต้องหลังวันเริ่ม';
+      el.style.color = 'var(--danger)';
+    }
+  } else {
+    el.textContent = '— กรอกวันเริ่ม-สิ้นสุดก่อน —';
+    el.style.color = 'var(--text3)';
+  }
+}
+
 function saveHistEntry() {
   const type = document.getElementById('addHistType').value;
   const code = document.getElementById('addHistEquipCode').value;
@@ -3082,9 +3157,24 @@ function saveHistEntry() {
   if (type === 'repair') {
     if (!detailVal) { alert('กรุณาระบุรายละเอียดการซ่อม'); return; }
     const cost = document.getElementById('hi_cost')?.value;
-    hist.repair.unshift({ id:newId, date:thDate, detail:detailVal, by:byVal||'-',
+    // คำนวณ downtime
+    const dtStart = document.getElementById('hi_dtstart')?.value;
+    const dtEnd = document.getElementById('hi_dtend')?.value;
+    let downtimeDays = '-';
+    if (dtStart && dtEnd) {
+      const d = Math.round((new Date(dtEnd) - new Date(dtStart)) / (1000*60*60*24));
+      if (d >= 0) downtimeDays = d + ' วัน';
+    }
+    hist.repair.unshift({
+      id: newId,
+      date: thDate,
+      detail: detailVal,
+      by: byVal||'-',
       cost: cost ? Number(cost).toLocaleString('th-TH') : '-',
-      status: document.getElementById('hi_status')?.value || 'เสร็จสิ้น', note:noteVal });
+      status: document.getElementById('hi_status')?.value || 'เสร็จสิ้น',
+      downtimeDays: downtimeDays,
+      note: noteVal,
+    });
     renderHistoryRepair(code);
   } else if (type === 'pm') {
     if (!detailVal) { alert('กรุณาระบุรายละเอียด PM'); return; }
@@ -4098,17 +4188,47 @@ function renderRepairPage() {
 
   const pb = document.getElementById('repairPendingBody');
   if (pb) pb.innerHTML = pending.length ? pending.map(r =>
-    `<tr><td><strong style="color:var(--primary);">${r.equipCode}</strong></td><td>${r.equipName}</td><td>${r.detail||'-'}</td><td>${r.dept}</td><td>${r.by||'-'}</td><td>${r.date||'-'}</td><td><span class="badge badge-danger">🆘 รอดำเนินการ</span></td></tr>`
+    `<tr>
+      <td><strong style="color:var(--primary);">${r.equipCode}</strong></td>
+      <td>${r.equipName}</td>
+      <td>${r.detail||'-'}</td>
+      <td>${r.dept}</td>
+      <td>${r.by||'-'}</td>
+      <td>${r.date||'-'}</td>
+      <td>
+        <button class="btn btn-warning btn-sm" onclick="openUpdateRepairStatus('${r.id}','${r.equipCode}')">
+          🔄 อัปเดตสถานะ
+        </button>
+      </td>
+    </tr>`
   ).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่รอดำเนินการ</td></tr>';
 
   const ib = document.getElementById('repairInprogressBody');
   if (ib) ib.innerHTML = inprog.length ? inprog.map(r =>
-    `<tr><td><strong style="color:var(--primary);">${r.equipCode}</strong></td><td>${r.equipName}</td><td>${r.detail||'-'}</td><td>${r.by||'-'}</td><td>${r.date||'-'}</td><td><span class="badge badge-warning">🔄 กำลังดำเนินการ</span></td></tr>`
+    `<tr>
+      <td><strong style="color:var(--primary);">${r.equipCode}</strong></td>
+      <td>${r.equipName}</td>
+      <td>${r.detail||'-'}</td>
+      <td>${r.by||'-'}</td>
+      <td>${r.date||'-'}</td>
+      <td>
+        <button class="btn btn-success btn-sm" onclick="openUpdateRepairStatus('${r.id}','${r.equipCode}')">
+          ✅ อัปเดตสถานะ
+        </button>
+      </td>
+    </tr>`
   ).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ไม่มีงานที่กำลังดำเนินการ</td></tr>';
 
   const db = document.getElementById('repairDoneBody');
   if (db) db.innerHTML = done.length ? done.map(r =>
-    `<tr><td><strong style="color:var(--primary);">${r.equipCode}</strong></td><td>${r.equipName}</td><td>${r.detail||'-'}</td><td style="text-align:center;">${r.note&&r.note.includes('Downtime:') ? r.note.split('Downtime:')[1].split('|')[0].trim() : '-'}</td><td>${r.cost||'-'}</td><td>${r.date||'-'}</td></tr>`
+    `<tr>
+      <td><strong style="color:var(--primary);">${r.equipCode}</strong></td>
+      <td>${r.equipName}</td>
+      <td>${r.detail||'-'}</td>
+      <td style="text-align:center;">${r.downtimeDays||'-'}</td>
+      <td>${r.cost||'-'}</td>
+      <td>${r.date||'-'}</td>
+    </tr>`
   ).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่เสร็จสิ้น</td></tr>';
 }
 
@@ -4137,7 +4257,15 @@ function renderPMPage() {
     });
     allPM.sort((a,b) => b.id.localeCompare(a.id));
     histBody.innerHTML = allPM.length ? allPM.map(p =>
-      `<tr><td>${p.date||'-'}</td><td><strong>${p.equipCode}</strong><br><span style="font-size:11px;color:var(--text3);">${p.equipName}</span></td><td>${p.dept}</td><td>${p.detail||'-'}</td><td>${p.by||'-'}</td><td>${p.note&&p.note.includes('ค่าใช้จ่าย:') ? p.note.split('ค่าใช้จ่าย:')[1].split('|')[0].trim() : '-'}</td><td><span class="badge badge-success">✅ ผ่าน</span></td></tr>`
+      `<tr>
+        <td>${p.date||'-'}</td>
+        <td><strong>${p.equipCode}</strong><br><span style="font-size:11px;color:var(--text3);">${p.equipName}</span></td>
+        <td>${p.dept}</td>
+        <td>${p.detail||'-'}</td>
+        <td>${p.by||'-'}</td>
+        <td>${p.cost||'-'}</td>
+        <td><span class="badge badge-success">${p.result||'✅ ผ่าน'}</span></td>
+      </tr>`
     ).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีประวัติการบำรุงรักษา</td></tr>';
   }
 }
@@ -4175,6 +4303,59 @@ function returnBorrow(id, code) {
   }
   renderBorrowPage();
   showToast('✅ บันทึกการรับคืนแล้ว');
+}
+
+// ===== REPAIR STATUS UPDATE =====
+function openUpdateRepairStatus(repairId, equipCode) {
+  const hist = getHistory(equipCode);
+  const r = hist.repair.find(x => x.id === repairId);
+  if (!r) return;
+  const equip = equipmentData.find(e => e.code === equipCode);
+  document.getElementById('updateRepairId').value = repairId;
+  document.getElementById('updateRepairEquipCode').value = equipCode;
+  document.getElementById('updateRepairSubtitle').textContent = (equip ? equip.name : equipCode) + ' • ' + (r.detail||'');
+  document.getElementById('updateRepairStatus').value = r.status || 'รอดำเนินการ';
+  document.getElementById('updateRepairCost').value = (r.cost||'').replace(/[^0-9]/g,'');
+  document.getElementById('updateRepairFinishDate').value = '';
+  document.getElementById('updateRepairNote').value = r.note||'';
+  openModal('updateRepairModal');
+}
+
+function saveRepairStatus() {
+  const repairId = document.getElementById('updateRepairId').value;
+  const equipCode = document.getElementById('updateRepairEquipCode').value;
+  const newStatus = document.getElementById('updateRepairStatus').value;
+  const cost = document.getElementById('updateRepairCost').value;
+  const note = document.getElementById('updateRepairNote').value.trim();
+  const finishDate = document.getElementById('updateRepairFinishDate').value;
+
+  const hist = getHistory(equipCode);
+  const r = hist.repair.find(x => x.id === repairId);
+  if (!r) return;
+
+  r.status = newStatus;
+  if (cost) r.cost = Number(cost).toLocaleString('th-TH');
+  if (note) r.note = note;
+  if (finishDate) r.finishDate = isoToThaiDate(finishDate);
+
+  // ถ้าเสร็จสิ้น → อัปเดตสถานะเครื่องมือกลับเป็นพร้อมใช้งาน
+  if (newStatus === 'เสร็จสิ้น') {
+    const idx = equipmentData.findIndex(e => e.code === equipCode);
+    if (idx > -1) {
+      equipmentData[idx] = { ...equipmentData[idx], status: 'พร้อมใช้งาน' };
+      renderEquipTable(equipmentData);
+      syncEquipToSheet(equipmentData[idx]);
+    }
+  }
+
+  closeModal('updateRepairModal');
+  renderRepairPage();
+
+  if (document.getElementById('viewEquipModal')?.classList.contains('open')) {
+    renderHistoryRepair(equipCode);
+  }
+
+  showToast('✅ อัปเดตสถานะการซ่อมเป็น "' + newStatus + '" แล้ว');
 }
 
 let _clearDataType = '';
