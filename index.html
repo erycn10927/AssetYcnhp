@@ -2291,13 +2291,12 @@ function filterByStatus(status) {
 function formatStickerDate(val) {
   if (!val || val === '-' || val === '') return '-';
 
-  // ถ้าเป็น dd/mm/yyyy หรือ dd/mm/ปีพ.ศ. อยู่แล้ว → ดึงแค่วัน/เดือน/ปี
+  // ถ้าเป็น dd/mm/yyyy หรือ dd/mm/ปีพ.ศ. อยู่แล้ว
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(String(val).trim())) {
     const parts = String(val).trim().split('/');
     const d = parts[0].padStart(2,'0');
     const m = parts[1].padStart(2,'0');
     const y = parseInt(parts[2]);
-    // แปลงเป็น พ.ศ. ถ้ายังเป็น ค.ศ.
     return d + '/' + m + '/' + (y < 2400 ? y + 543 : y);
   }
 
@@ -2308,20 +2307,21 @@ function formatStickerDate(val) {
     return d + '/' + m + '/' + (parseInt(y) + 543);
   }
 
-  // ถ้าเป็น Date string (เช่น "Sat Apr 29 2569 00:00:00 GMT+0700")
-  // ดึงตัวเลขออกมา
+  // ถ้าเป็น Date string ที่มี GMT หรือ เวลาอินโดจีน
   const dateObj = new Date(val);
   if (!isNaN(dateObj.getTime())) {
     const d = String(dateObj.getDate()).padStart(2,'0');
     const m = String(dateObj.getMonth()+1).padStart(2,'0');
     const y = dateObj.getFullYear();
-    // ถ้าปีดูเหมือน ค.ศ. (น้อยกว่า 2400) ให้บวก 543
     return d + '/' + m + '/' + (y < 2400 ? y + 543 : y);
   }
 
-  // fallback
+  // fallback — ตัด GMT/เวลาทิ้ง เหลือแค่วันที่
   return String(val).split(' ')[0] || '-';
 }
+
+// alias ใช้ทุกที่ที่แสดงวันที่
+const cleanDateDisplay = formatStickerDate;
 
 // ===== QR STICKER =====
 let _qrCurrentEquip = null;
@@ -2943,7 +2943,7 @@ function renderHistoryRepair(code) {
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => histRow([
-      histCell(`<span style="font-size:11px;">${r.date}</span>`),
+      histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
       histCell(`<div style="font-weight:600;">${r.detail}</div>${r.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${r.note}</div>`:''}`),
       histCell(r.by||'-', 'color:var(--text2);'),
       histCell(r.downtimeDays||'-', 'color:var(--danger);font-weight:600;text-align:center;'),
@@ -2961,16 +2961,33 @@ function renderHistoryPM(code) {
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติบำรุงรักษา'); return; }
   const cols = ['วันที่','รายละเอียด PM','ดำเนินการโดย','ค่าใช้จ่าย','ผล','หมายเหตุ'];
   const widths = '90px 1fr 130px 90px 90px 120px';
+
+  // helper: แปลงวันที่จาก Google Sheets ที่อาจมี GMT
+  const fmtDate = (v) => {
+    if (!v || v==='-') return '-';
+    if (/GMT|00:00:00/.test(String(v))) return formatStickerDate(v);
+    return String(v);
+  };
+
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
-    ${hist.map(r => histRow([
-      histCell(`<span style="font-size:11px;">${r.date}</span>`),
-      histCell(`<div style="font-weight:600;">${r.detail||'-'}</div>`),
-      histCell(r.by||'-', 'color:var(--text2);'),
-      histCell(r.cost ? r.cost+' บ.' : '-', 'color:var(--success);font-weight:600;'),
-      histCell(`<span class="badge ${(r.result||'').includes('ผ่าน')?'badge-success':'badge-warning'}">${r.result||'ผ่าน'}</span>`),
-      histCell(r.note||'-', 'color:var(--text3);font-size:11px;'),
-    ], widths)).join('')}
+    ${hist.map(r => {
+      // รองรับ format เก่า (note มี "ค่าใช้จ่าย: xxx") และ format ใหม่ (แยก field)
+      const detail = r.detail && r.detail !== "'" && r.detail !== '-' ? r.detail : (r.note&&r.note.includes('|')?r.note.split('|')[0].trim():r.detail||'-');
+      const by = r.by && r.by !== "'" ? r.by : '-';
+      const cost = r.cost && r.cost !== "'" && r.cost !== '0' && r.cost !== '-' ? r.cost+' บ.' : '-';
+      const result = r.result && r.result !== "'" ? r.result : 'ผ่าน';
+      const note = r.note && r.note !== "'" ? r.note : '-';
+      const resultBadge = result.includes('ผ่าน') && !result.includes('ไม่') ? 'badge-success' : result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-danger';
+      return histRow([
+        histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
+        histCell(`<div style="font-weight:600;">${detail}</div>`),
+        histCell(by, 'color:var(--text2);'),
+        histCell(cost, 'color:var(--success);font-weight:600;'),
+        histCell(`<span class="badge ${resultBadge}">${result}</span>`),
+        histCell(note, 'color:var(--text3);font-size:11px;'),
+      ], widths);
+    }).join('')}
   </div>`;
 }
 
@@ -2999,8 +3016,8 @@ function renderHistoryCalib(code) {
           ? `<button onclick="viewCalibDoc('${r.id}')" style="background:var(--primary);color:#fff;border:none;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit;">📄 ${calRec.files.length}</button>`
           : `<span style="color:var(--text3);font-size:11px;">—</span>`;
         return histRow([
-          histCell(`<span style="font-size:11px;">${r.date}</span>`),
-          histCell(`<span style="font-size:11px;color:var(--text2);">${r.nextDate}</span>`),
+          histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
+          histCell(`<span style="font-size:11px;color:var(--text2);">${cleanDateDisplay(r.nextDate)}</span>`),
           histCell(r.by, 'color:var(--text2);'),
           histCell(`<span class="badge ${badge}">${r.result}</span>`),
           histCell(fileBtn),
@@ -3023,8 +3040,8 @@ function renderHistoryBorrow(code) {
     ${hist.map(r => {
       const badge = r.status==='คืนแล้ว' ? 'badge-success' : 'badge-warning';
       return histRow([
-        histCell(`<span style="font-size:11px;">${r.dateOut}</span>`),
-        histCell(`<span style="font-size:11px;${r.dateIn==='-'?'color:var(--warning);font-weight:700;':''}">${r.dateIn}</span>`),
+        histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.dateOut)}</span>`),
+        histCell(`<span style="font-size:11px;${r.dateIn==='-'?'color:var(--warning);font-weight:700;':''}">${cleanDateDisplay(r.dateIn)}</span>`),
         histCell(r.borrower, 'font-weight:600;'),
         histCell(r.dept, 'font-size:11px;color:var(--text2);'),
         histCell(r.reason || '-', 'color:var(--text3);font-size:11px;'),
@@ -3178,7 +3195,15 @@ function saveHistEntry() {
     renderHistoryRepair(code);
   } else if (type === 'pm') {
     if (!detailVal) { alert('กรุณาระบุรายละเอียด PM'); return; }
-    hist.pm.unshift({ id:newId, date:thDate, detail:detailVal, by:byVal||'-', note:noteVal });
+    hist.pm.unshift({
+      id: newId,
+      date: thDate,
+      detail: detailVal,
+      by: byVal||'-',
+      cost: '-',
+      result: document.getElementById('hi_status')?.value || 'ผ่าน',
+      note: noteVal,
+    });
     renderHistoryPM(code);
   } else if (type === 'calib') {
     if (!byVal) { alert('กรุณาระบุผู้สอบเทียบ'); return; }
@@ -3436,9 +3461,9 @@ function renderCalibTable(data) {
         <div style="font-size:11px;color:var(--text3);">รหัสใบ: ${c.id}</div>
       </td>
       <td>${c.dept}</td>
-      <td>${c.calibDate}</td>
+      <td>${cleanDateDisplay(c.calibDate)}</td>
       <td style="font-size:12px;">${c.by}</td>
-      <td><span style="${nextDateColor(st)}">${c.nextDate}${st==='over'?' <span style="font-size:10px;">(เกินกำหนด)</span>':''}</span></td>
+      <td><span style="${nextDateColor(st)}">${cleanDateDisplay(c.nextDate)}${st==='over'?' <span style="font-size:10px;">(เกินกำหนด)</span>':''}</span></td>
       <td>${calibStatusBadge(st, c.result)}</td>
       <td>${fileBtn}</td>
       <td>
@@ -3673,8 +3698,8 @@ function viewCalibDoc(calibId) {
   const preview = document.getElementById('viewDocPreview');
   document.getElementById('viewDocTitle').textContent = `เอกสารสอบเทียบ – ${c.equipName}`;
   info.innerHTML = `<div style="display:flex;gap:20px;flex-wrap:wrap;">
-    <span>📅 วันสอบเทียบ: <strong>${c.calibDate}</strong></span>
-    <span>⏰ ครบกำหนด: <strong>${c.nextDate}</strong></span>
+    <span>📅 วันสอบเทียบ: <strong>${cleanDateDisplay(c.calibDate)}</strong></span>
+    <span>⏰ ครบกำหนด: <strong>${cleanDateDisplay(c.nextDate)}</strong></span>
     <span>👤 โดย: <strong>${c.by}</strong></span>
     <span>✅ ผล: <strong>${c.result}</strong></span>
   </div>`;
@@ -3896,7 +3921,15 @@ async function loadAllFromSheets() {
     res.pm.forEach(row => {
       const hist = getHistory(row.equipCode);
       if (!hist.pm.find(p => p.id === row.id)) {
-        hist.pm.push({ id:row.id, date:row.pmDate, detail:row.detail, by:row.by, note:row.note||'' });
+        hist.pm.push({
+          id: row.id,
+          date: row.pmDate,
+          detail: row.detail || '-',
+          by: row.by || '-',
+          cost: row.cost || '-',
+          result: row.result || 'ผ่าน',
+          note: row.note || '',
+        });
       }
     });
   }
@@ -4025,7 +4058,7 @@ function generateRepairReport() {
     <div class="table-wrap" style="margin-top:16px;">
       <table style="font-size:13px;">
         <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>แผนก</th><th>รายละเอียด</th><th>วันที่</th><th>ค่าใช้จ่าย</th><th>สถานะ</th></tr></thead>
-        <tbody>${allRepairs.map(r => `<tr><td>${r.equipCode}</td><td>${r.equipName}</td><td>${r.dept}</td><td>${r.detail||'-'}</td><td>${r.date||'-'}</td><td>${r.cost||'-'}</td><td><span class="badge ${r.status==='เสร็จสิ้น'?'badge-success':'badge-warning'}">${r.status||'-'}</span></td></tr>`).join('')}</tbody>
+        <tbody>${allRepairs.map(r => `<tr><td>${r.equipCode}</td><td>${r.equipName}</td><td>${r.dept}</td><td>${r.detail||'-'}</td><td>${cleanDateDisplay(r.date)}</td><td>${r.cost||'-'}</td><td><span class="badge ${r.status==='เสร็จสิ้น'?'badge-success':'badge-warning'}">${r.status||'-'}</span></td></tr>`).join('')}</tbody>
       </table>
     </div>`;
 }
@@ -4133,7 +4166,7 @@ function renderDashboard() {
             : st === 'warn'
             ? '<span class="badge badge-warning"><span class="badge-dot"></span>ใกล้ครบกำหนด</span>'
             : '<span class="badge badge-success"><span class="badge-dot"></span>ปกติ</span>';
-          return `<tr><td><div style="font-weight:600;font-size:13px;">${c.equipName}</div><div style="font-size:11px;color:var(--text3);">${c.dept}</div></td><td><span style="font-size:12px;font-weight:700;">${c.nextDate}</span></td><td>${badge}</td></tr>`;
+          return `<tr><td><div style="font-weight:600;font-size:13px;">${c.equipName}</div><div style="font-size:11px;color:var(--text3);">${c.dept}</div></td><td><span style="font-size:12px;font-weight:700;">${cleanDateDisplay(c.nextDate)}</span></td><td>${badge}</td></tr>`;
         }).join('') + '</tbody></table>';
     }
   }
@@ -4194,7 +4227,7 @@ function renderRepairPage() {
       <td>${r.detail||'-'}</td>
       <td>${r.dept}</td>
       <td>${r.by||'-'}</td>
-      <td>${r.date||'-'}</td>
+      <td>${cleanDateDisplay(r.date)}</td>
       <td>
         <button class="btn btn-warning btn-sm" onclick="openUpdateRepairStatus('${r.id}','${r.equipCode}')">
           🔄 อัปเดตสถานะ
@@ -4210,7 +4243,7 @@ function renderRepairPage() {
       <td>${r.equipName}</td>
       <td>${r.detail||'-'}</td>
       <td>${r.by||'-'}</td>
-      <td>${r.date||'-'}</td>
+      <td>${cleanDateDisplay(r.date)}</td>
       <td>
         <button class="btn btn-success btn-sm" onclick="openUpdateRepairStatus('${r.id}','${r.equipCode}')">
           ✅ อัปเดตสถานะ
@@ -4227,7 +4260,7 @@ function renderRepairPage() {
       <td>${r.detail||'-'}</td>
       <td style="text-align:center;">${r.downtimeDays||'-'}</td>
       <td>${r.cost||'-'}</td>
-      <td>${r.date||'-'}</td>
+      <td>${cleanDateDisplay(r.date)}</td>
     </tr>`
   ).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่เสร็จสิ้น</td></tr>';
 }
