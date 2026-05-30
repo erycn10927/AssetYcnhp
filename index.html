@@ -2930,17 +2930,21 @@ function renderHistoryRepair(code) {
   const el = document.getElementById('repairHistBody');
   document.getElementById('repairHistCount').textContent = `ประวัติการซ่อมทั้งหมด ${hist.length} ครั้ง`;
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติการซ่อม'); return; }
-  const cols = ['วันที่','รายละเอียด','ดำเนินการโดย','Downtime','ค่าใช้จ่าย','สถานะ'];
-  const widths = '90px 1fr 120px 80px 80px 90px';
+  const cols = ['วันที่','รายละเอียด','ดำเนินการโดย','Downtime','ค่าใช้จ่าย','สถานะ',''];
+  const widths = '90px 1fr 120px 70px 80px 90px 60px';
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => histRow([
       histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
-      histCell(`<div style="font-weight:600;">${r.detail}</div>${r.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${r.note}</div>`:''}`),
+      histCell(`<div style="font-weight:600;">${r.detail||'-'}</div>${r.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${r.note}</div>`:''}`),
       histCell(r.by||'-', 'color:var(--text2);'),
       histCell(r.downtimeDays||'-', 'color:var(--danger);font-weight:600;text-align:center;'),
       histCell(r.cost ? r.cost+' บ.' : '-', 'color:var(--danger);font-weight:600;'),
-      histCell(`<span class="badge ${r.status==='เสร็จสิ้น'?'badge-success':'badge-warning'}">${r.status}</span>`),
+      histCell(`<span class="badge ${r.status==='เสร็จสิ้น'?'badge-success':'badge-warning'}">${r.status||'-'}</span>`),
+      histCell(`<div style="display:flex;gap:3px;">
+        <button class="icon-btn edit" onclick="editHistEntry('repair','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
+        <button class="icon-btn del" onclick="deleteHistEntry('repair','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
+      </div>`),
     ], widths)).join('')}
   </div>`;
 }
@@ -2951,33 +2955,29 @@ function renderHistoryPM(code) {
   const el = document.getElementById('pmHistBody');
   document.getElementById('pmHistCount').textContent = `ประวัติบำรุงรักษาทั้งหมด ${hist.length} ครั้ง`;
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติบำรุงรักษา'); return; }
-  const cols = ['วันที่','รายละเอียด PM','ดำเนินการโดย','ค่าใช้จ่าย','ผล','หมายเหตุ'];
-  const widths = '90px 1fr 130px 90px 90px 120px';
-
-  // helper: แปลงวันที่จาก Google Sheets ที่อาจมี GMT
-  const fmtDate = (v) => {
-    if (!v || v==='-') return '-';
-    if (/GMT|00:00:00/.test(String(v))) return formatStickerDate(v);
-    return String(v);
-  };
+  const cols = ['วันที่','รายละเอียด PM','ดำเนินการโดย','ค่าใช้จ่าย','ผล','หมายเหตุ',''];
+  const widths = '90px 1fr 120px 80px 80px 100px 60px';
 
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => {
-      // รองรับ format เก่า (note มี "ค่าใช้จ่าย: xxx") และ format ใหม่ (แยก field)
-      const detail = r.detail && r.detail !== "'" && r.detail !== '-' ? r.detail : (r.note&&r.note.includes('|')?r.note.split('|')[0].trim():r.detail||'-');
+      const detail = r.detail && r.detail !== "'" ? r.detail : '-';
       const by = r.by && r.by !== "'" ? r.by : '-';
       const cost = r.cost && r.cost !== "'" && r.cost !== '0' && r.cost !== '-' ? r.cost+' บ.' : '-';
       const result = r.result && r.result !== "'" ? r.result : 'ผ่าน';
       const note = r.note && r.note !== "'" ? r.note : '-';
-      const resultBadge = result.includes('ผ่าน') && !result.includes('ไม่') ? 'badge-success' : result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-danger';
+      const rb = result.includes('ผ่าน') && !result.includes('ไม่') ? 'badge-success' : result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-danger';
       return histRow([
         histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
         histCell(`<div style="font-weight:600;">${detail}</div>`),
         histCell(by, 'color:var(--text2);'),
         histCell(cost, 'color:var(--success);font-weight:600;'),
-        histCell(`<span class="badge ${resultBadge}">${result}</span>`),
+        histCell(`<span class="badge ${rb}">${result}</span>`),
         histCell(note, 'color:var(--text3);font-size:11px;'),
+        histCell(`<div style="display:flex;gap:3px;">
+          <button class="icon-btn edit" onclick="editHistEntry('pm','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
+          <button class="icon-btn del" onclick="deleteHistEntry('pm','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
+        </div>`),
       ], widths);
     }).join('')}
   </div>`;
@@ -2990,8 +2990,8 @@ function renderHistoryCalib(code) {
   document.getElementById('calibHistCount').textContent = `ประวัติสอบเทียบทั้งหมด ${hist.length} ครั้ง`;
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติสอบเทียบ'); return; }
 
-  const cols = ['วันสอบเทียบ','ครบกำหนด','ดำเนินการโดย','ผลลัพธ์','เอกสาร','หมายเหตุ'];
-  const widths = '100px 100px 140px 120px 80px 1fr';
+  const cols = ['วันสอบเทียบ','ครบกำหนด','ดำเนินการโดย','ผลลัพธ์','เอกสาร','หมายเหตุ',''];
+  const widths = '90px 90px 130px 110px 70px 1fr 60px';
   el.innerHTML = `
     <div style="background:#EBF5FF;border:1px solid #B5D4F4;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px;font-size:12px;color:#165A94;display:flex;align-items:center;gap:8px;">
       🔗 <span>ข้อมูลนี้เชื่อมกับ <strong>เมนูทะเบียนสอบเทียบ</strong> — บันทึกที่ไหนก็อัปเดตทั้งสองที่</span>
@@ -3000,8 +3000,7 @@ function renderHistoryCalib(code) {
     <div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
       ${histHeader(cols, widths)}
       ${hist.map(r => {
-        const badge = r.result==='ผ่าน' ? 'badge-success' : r.result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-danger';
-        // หา calibData record เพื่อเช็คไฟล์
+        const badge = r.result==='ผ่าน' ? 'badge-success' : r.result&&r.result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-danger';
         const calRec = calibData.find(c => c.id === r.id);
         const hasFiles = calRec && calRec.files && calRec.files.length > 0;
         const fileBtn = hasFiles
@@ -3010,10 +3009,14 @@ function renderHistoryCalib(code) {
         return histRow([
           histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
           histCell(`<span style="font-size:11px;color:var(--text2);">${cleanDateDisplay(r.nextDate)}</span>`),
-          histCell(r.by, 'color:var(--text2);'),
-          histCell(`<span class="badge ${badge}">${r.result}</span>`),
+          histCell(r.by||'-', 'color:var(--text2);'),
+          histCell(`<span class="badge ${badge}">${r.result||'-'}</span>`),
           histCell(fileBtn),
           histCell(r.note || '-', 'color:var(--text3);font-size:11px;'),
+          histCell(`<div style="display:flex;gap:3px;">
+            <button class="icon-btn edit" onclick="editHistEntry('calib','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
+            <button class="icon-btn del" onclick="deleteHistEntry('calib','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
+          </div>`),
         ], widths);
       }).join('')}
     </div>`;
@@ -3025,8 +3028,8 @@ function renderHistoryBorrow(code) {
   const el = document.getElementById('borrowHistBody');
   document.getElementById('borrowHistCount').textContent = `ประวัติยืม-คืนทั้งหมด ${hist.length} ครั้ง`;
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติยืม-คืน'); return; }
-  const cols = ['วันยืม','วันคืน','ผู้ยืม','แผนก','วัตถุประสงค์','สถานะ'];
-  const widths = '90px 90px 110px 110px 1fr 90px';
+  const cols = ['วันยืม','วันคืน','ผู้ยืม','แผนก','วัตถุประสงค์','สถานะ',''];
+  const widths = '80px 80px 100px 100px 1fr 80px 60px';
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => {
@@ -3034,10 +3037,14 @@ function renderHistoryBorrow(code) {
       return histRow([
         histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.dateOut)}</span>`),
         histCell(`<span style="font-size:11px;${r.dateIn==='-'?'color:var(--warning);font-weight:700;':''}">${cleanDateDisplay(r.dateIn)}</span>`),
-        histCell(r.borrower, 'font-weight:600;'),
-        histCell(r.dept, 'font-size:11px;color:var(--text2);'),
+        histCell(r.borrower||'-', 'font-weight:600;'),
+        histCell(r.dept||'-', 'font-size:11px;color:var(--text2);'),
         histCell(r.reason || '-', 'color:var(--text3);font-size:11px;'),
         histCell(`<span class="badge ${badge}">${r.status}</span>`),
+        histCell(`<div style="display:flex;gap:3px;">
+          <button class="icon-btn edit" onclick="editHistEntry('borrow','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
+          <button class="icon-btn del" onclick="deleteHistEntry('borrow','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
+        </div>`),
       ], widths);
     }).join('')}
   </div>`;
@@ -3147,13 +3154,14 @@ function calcHistDowntime() {
   }
 }
 
-function saveHistEntry() {
+function saveHistEntry(isEdit) {
   const type = document.getElementById('addHistType').value;
   const code = document.getElementById('addHistEquipCode').value;
   const dateVal = document.getElementById('hi_date')?.value;
   const byVal = document.getElementById('hi_by')?.value?.trim();
   const detailVal = document.getElementById('hi_detail')?.value?.trim();
   const noteVal = document.getElementById('hi_note')?.value?.trim() || '';
+  const editId = document.getElementById('hi_editid')?.value || '';
 
   if (!dateVal) { alert('กรุณาระบุวันที่'); return; }
 
@@ -3161,12 +3169,11 @@ function saveHistEntry() {
   const thDate = isoToThaiDate(dateVal);
   const nextRaw = document.getElementById('hi_nextdate')?.value;
   const nextDate = nextRaw ? isoToThaiDate(nextRaw) : '-';
-  const newId = type.toUpperCase() + Date.now();
+  const newId = editId || (type.toUpperCase() + Date.now());
 
   if (type === 'repair') {
     if (!detailVal) { alert('กรุณาระบุรายละเอียดการซ่อม'); return; }
     const cost = document.getElementById('hi_cost')?.value;
-    // คำนวณ downtime
     const dtStart = document.getElementById('hi_dtstart')?.value;
     const dtEnd = document.getElementById('hi_dtend')?.value;
     let downtimeDays = '-';
@@ -3174,70 +3181,79 @@ function saveHistEntry() {
       const d = Math.round((new Date(dtEnd) - new Date(dtStart)) / (1000*60*60*24));
       if (d >= 0) downtimeDays = d + ' วัน';
     }
-    hist.repair.unshift({
-      id: newId,
-      date: thDate,
-      detail: detailVal,
-      by: byVal||'-',
+    const entry = {
+      id: newId, date: thDate, detail: detailVal, by: byVal||'-',
       cost: cost ? Number(cost).toLocaleString('th-TH') : '-',
       status: document.getElementById('hi_status')?.value || 'เสร็จสิ้น',
-      downtimeDays: downtimeDays,
-      note: noteVal,
-    });
+      downtimeDays, note: noteVal,
+    };
+    if (editId) {
+      const idx = hist.repair.findIndex(x => x.id === editId);
+      if (idx > -1) hist.repair[idx] = entry; else hist.repair.unshift(entry);
+    } else {
+      hist.repair.unshift(entry);
+    }
     renderHistoryRepair(code);
   } else if (type === 'pm') {
     if (!detailVal) { alert('กรุณาระบุรายละเอียด PM'); return; }
-    hist.pm.unshift({
-      id: newId,
-      date: thDate,
-      detail: detailVal,
-      by: byVal||'-',
-      cost: '-',
+    const entry = {
+      id: newId, date: thDate, detail: detailVal, by: byVal||'-',
+      cost: (document.getElementById('hi_cost')?.value || '') ? Number(document.getElementById('hi_cost').value).toLocaleString('th-TH') : '-',
       result: document.getElementById('hi_status')?.value || 'ผ่าน',
       note: noteVal,
-    });
+    };
+    if (editId) {
+      const idx = hist.pm.findIndex(x => x.id === editId);
+      if (idx > -1) hist.pm[idx] = entry; else hist.pm.unshift(entry);
+    } else { hist.pm.unshift(entry); }
     renderHistoryPM(code);
   } else if (type === 'calib') {
     if (!byVal) { alert('กรุณาระบุผู้สอบเทียบ'); return; }
     if (!document.getElementById('hi_nextdate')?.value) { alert('กรุณาระบุวันครบกำหนดถัดไป'); return; }
     const result = document.getElementById('hi_status')?.value || 'ผ่าน';
     const calibEntry = { id:newId, date:thDate, nextDate, by:byVal, result, note:noteVal };
-    hist.calib.unshift(calibEntry);
+    if (editId) {
+      const idx = hist.calib.findIndex(x => x.id === editId);
+      if (idx > -1) hist.calib[idx] = calibEntry; else hist.calib.unshift(calibEntry);
+      // อัปเดต calibData ด้วย
+      const cidx = calibData.findIndex(x => x.id === editId);
+      if (cidx > -1) {
+        calibData[cidx] = { ...calibData[cidx], calibDate:thDate, nextDate, by:byVal, result, note:noteVal };
+        syncCalibToSheet(calibData[cidx]);
+      }
+    } else {
+      hist.calib.unshift(calibEntry);
+      const equip = equipmentData.find(e => e.code === code);
+      const newCalib = { id:newId, equipCode:code, equipName:equip?equip.name:code,
+        dept:equip?equip.dept:'-', calibDate:thDate, nextDate, by:byVal, result, note:noteVal, files:[] };
+      calibData.unshift(newCalib);
+      syncCalibToSheet(newCalib);
+    }
+    renderCalibTable(calibData);
     renderHistoryCalib(code);
 
-    // ── sync ไปยัง calibData (ทะเบียนสอบเทียบ) ด้วย ──
-    const equip = equipmentData.find(e => e.code === code);
-    calibData.unshift({
-      id: newId,
-      equipCode: code,
-      equipName: equip ? equip.name : code,
-      dept: equip ? equip.dept : '-',
-      calibDate: thDate,
-      nextDate,
-      by: byVal,
-      result,
-      note: noteVal,
-      files: [],
-    });
-    renderCalibTable(calibData);
-    syncCalibToSheet(calibData[0]);  // ← sync to Google Sheets
+  } else if (type === 'borrow') {
     if (!byVal) { alert('กรุณาระบุชื่อผู้ยืม'); return; }
-    const dept = document.getElementById('hi_dept')?.value || '-';
-    hist.borrow.unshift({ id:newId, dateOut:thDate, dateIn: nextDate === '-' ? '-' : nextDate,
-      borrower:byVal, dept, reason:noteVal, status:'ยังไม่คืน', condition:'-' });
+    const dept = document.getElementById('hi_dept_text')?.value || document.getElementById('hi_dept')?.value || '-';
+    const entry = { id:newId, dateOut:thDate, dateIn:nextDate==='-'?'-':nextDate,
+      borrower:byVal, dept, reason:noteVal, status:document.getElementById('hi_status')?.value||'ยังไม่คืน', condition:'-' };
+    if (editId) {
+      const idx = hist.borrow.findIndex(x => x.id === editId);
+      if (idx > -1) hist.borrow[idx] = entry; else hist.borrow.unshift(entry);
+    } else {
+      hist.borrow.unshift(entry);
+      const equipB = equipmentData.find(e => e.code === code);
+      syncBorrowToSheet({ id:newId, equipCode:code, equipName:equipB?equipB.name:code,
+        dept:equipB?equipB.dept:'-', dateOut:thDate, dateIn:nextDate==='-'?'':nextDate,
+        borrower:byVal, borrowDept:dept, reason:noteVal, status:'ยังไม่คืน', condition:'-', note:'' });
+    }
     renderHistoryBorrow(code);
-    const equipB = equipmentData.find(e => e.code === code);
-    syncBorrowToSheet({  // ← sync to Google Sheets
-      id: newId, equipCode: code, equipName: equipB ? equipB.name : code,
-      dept: equipB ? equipB.dept : '-', dateOut: thDate,
-      dateIn: nextDate === '-' ? '' : nextDate,
-      borrower: byVal, borrowDept: dept, reason: noteVal,
-      status: 'ยังไม่คืน', condition: '-', note: '',
-    });
   }
 
+  // reset saveBtn to normal
+  document.getElementById('addHistSaveBtn').onclick = function() { saveHistEntry(false); };
   closeModal('addHistModal');
-  showToast(`✅ บันทึกประวัติเรียบร้อยแล้ว`);
+  showToast('✅ บันทึกประวัติเรียบร้อยแล้ว');
 }
 
 // ===== EDIT EQUIPMENT =====
@@ -4322,7 +4338,107 @@ function returnBorrow(id, code) {
   showToast('✅ บันทึกการรับคืนแล้ว');
 }
 
-// ===== REPAIR STATUS UPDATE =====
+
+// ===== EDIT / DELETE HISTORY ENTRIES =====
+function deleteHistEntry(type, code, id) {
+  const labels = { repair:'ประวัติการซ่อม', pm:'ประวัติ PM', calib:'ประวัติสอบเทียบ', borrow:'ประวัติยืม-คืน' };
+  if (!confirm('ต้องการลบ' + (labels[type]||'รายการ') + 'นี้ออกจากระบบ?')) return;
+  const hist = getHistory(code);
+  if (hist[type]) hist[type] = hist[type].filter(x => x.id !== id);
+  // sync ลบออกจาก calibData ด้วย ถ้าเป็น calib
+  if (type === 'calib') {
+    calibData = calibData.filter(x => x.id !== id);
+    renderCalibTable(calibData);
+    syncDeleteCalibToSheet(id);
+  }
+  // re-render แท็บที่เกี่ยวข้อง
+  if (type === 'repair') renderHistoryRepair(code);
+  if (type === 'pm')     renderHistoryPM(code);
+  if (type === 'calib')  renderHistoryCalib(code);
+  if (type === 'borrow') renderHistoryBorrow(code);
+  showToast('🗑️ ลบรายการแล้ว');
+}
+
+function editHistEntry(type, code, id) {
+  const hist = getHistory(code);
+  const r = hist[type] && hist[type].find(x => x.id === id);
+  if (!r) return;
+  _currentViewCode = code;
+
+  // เปิด modal addHistModal พร้อมกรอกข้อมูลเดิม
+  document.getElementById('addHistType').value = type;
+  document.getElementById('addHistEquipCode').value = code;
+
+  // helper แปลง Thai date → ISO
+  const thToISO = (td) => {
+    if (!td || td==='-') return '';
+    const p = td.split('/');
+    if (p.length !== 3) return '';
+    const ce = parseInt(p[2]) > 2400 ? parseInt(p[2])-543 : parseInt(p[2]);
+    return ce+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+  };
+
+  if (type === 'repair') {
+    document.getElementById('addHistIcon').textContent = '🔧';
+    document.getElementById('addHistTitle').textContent = 'แก้ไขประวัติการซ่อม';
+    document.getElementById('addHistFormBody').innerHTML = `
+      <input type="hidden" id="hi_editid" value="${id}">
+      <div class="form-group"><label>วันที่ซ่อม *</label><input type="date" id="hi_date" value="${thToISO(r.date)}"></div>
+      <div class="form-group"><label>ค่าใช้จ่าย (บาท)</label><input type="number" id="hi_cost" value="${(r.cost||'').replace(/[^0-9]/g,'')}"></div>
+      <div class="form-group full"><label>รายละเอียดการซ่อม *</label><textarea id="hi_detail">${r.detail||''}</textarea></div>
+      <div class="form-group"><label>ดำเนินการโดย</label><input id="hi_by" value="${r.by||''}"></div>
+      <div class="form-group"><label>สถานะ</label>
+        <select id="hi_status"><option ${r.status==='เสร็จสิ้น'?'selected':''}>เสร็จสิ้น</option><option ${r.status==='กำลังดำเนินการ'?'selected':''}>กำลังดำเนินการ</option><option ${r.status==='รอชิ้นส่วน'?'selected':''}>รอชิ้นส่วน</option></select>
+      </div>
+      <div class="form-group full"><label>หมายเหตุ</label><textarea id="hi_note">${r.note||''}</textarea></div>`;
+
+  } else if (type === 'pm') {
+    document.getElementById('addHistIcon').textContent = '🛠️';
+    document.getElementById('addHistTitle').textContent = 'แก้ไขประวัติ PM';
+    document.getElementById('addHistFormBody').innerHTML = `
+      <input type="hidden" id="hi_editid" value="${id}">
+      <div class="form-group"><label>วันที่ PM *</label><input type="date" id="hi_date" value="${thToISO(r.date)}"></div>
+      <div class="form-group"><label>ค่าใช้จ่าย (บาท)</label><input type="number" id="hi_cost" value="${(r.cost||'').replace(/[^0-9]/g,'')}"></div>
+      <div class="form-group full"><label>รายละเอียด PM *</label><textarea id="hi_detail">${r.detail||''}</textarea></div>
+      <div class="form-group"><label>ดำเนินการโดย</label><input id="hi_by" value="${r.by||''}"></div>
+      <div class="form-group"><label>ผลการบำรุงรักษา</label>
+        <select id="hi_status"><option ${(r.result||'').includes('ผ่าน')&&!(r.result||'').includes('ไม่')?'selected':''}>✅ ผ่าน — ปกติ</option><option ${(r.result||'').includes('เงื่อนไข')?'selected':''}>⚠️ ผ่าน — แนะนำติดตาม</option><option ${(r.result||'').includes('ผิดปกติ')?'selected':''}>❌ พบความผิดปกติ — ต้องซ่อม</option></select>
+      </div>
+      <div class="form-group full"><label>หมายเหตุ</label><textarea id="hi_note">${r.note||''}</textarea></div>`;
+
+  } else if (type === 'calib') {
+    document.getElementById('addHistIcon').textContent = '⚖️';
+    document.getElementById('addHistTitle').textContent = 'แก้ไขประวัติสอบเทียบ';
+    document.getElementById('addHistFormBody').innerHTML = `
+      <input type="hidden" id="hi_editid" value="${id}">
+      <div class="form-group"><label>วันที่สอบเทียบ *</label><input type="date" id="hi_date" value="${thToISO(r.date)}"></div>
+      <div class="form-group"><label>วันครบกำหนดถัดไป *</label><input type="date" id="hi_nextdate" value="${thToISO(r.nextDate)}"></div>
+      <div class="form-group"><label>สอบเทียบโดย *</label><input id="hi_by" value="${r.by||''}"></div>
+      <div class="form-group"><label>ผลการสอบเทียบ</label>
+        <select id="hi_status"><option ${r.result==='ผ่าน'?'selected':''}>ผ่าน</option><option ${r.result==='ผ่าน (มีเงื่อนไข)'?'selected':''}>ผ่าน (มีเงื่อนไข)</option><option ${r.result==='ไม่ผ่าน'?'selected':''}>ไม่ผ่าน</option></select>
+      </div>
+      <div class="form-group full"><label>หมายเหตุ</label><textarea id="hi_note">${r.note||''}</textarea></div>`;
+
+  } else if (type === 'borrow') {
+    document.getElementById('addHistIcon').textContent = '📤';
+    document.getElementById('addHistTitle').textContent = 'แก้ไขประวัติยืม-คืน';
+    document.getElementById('addHistFormBody').innerHTML = `
+      <input type="hidden" id="hi_editid" value="${id}">
+      <div class="form-group"><label>วันที่ยืม *</label><input type="date" id="hi_date" value="${thToISO(r.dateOut)}"></div>
+      <div class="form-group"><label>กำหนดวันคืน</label><input type="date" id="hi_nextdate" value="${thToISO(r.dateIn)}"></div>
+      <div class="form-group"><label>ผู้ยืม *</label><input id="hi_by" value="${r.borrower||''}"></div>
+      <div class="form-group"><label>แผนกที่ยืม</label><input id="hi_dept_text" value="${r.dept||''}"></div>
+      <div class="form-group"><label>สถานะ</label>
+        <select id="hi_status"><option ${r.status==='ยังไม่คืน'?'selected':''}>ยังไม่คืน</option><option ${r.status==='คืนแล้ว'?'selected':''}>คืนแล้ว</option></select>
+      </div>
+      <div class="form-group full"><label>วัตถุประสงค์</label><textarea id="hi_note">${r.reason||''}</textarea></div>`;
+  }
+
+  // patch saveHistSaveBtn ให้รู้ว่ากำลัง edit
+  document.getElementById('addHistSaveBtn').onclick = function() { saveHistEntry(true); };
+  openModal('addHistModal');
+}
+
 function openUpdateRepairStatus(repairId, equipCode) {
   const hist = getHistory(equipCode);
   const r = hist.repair.find(x => x.id === repairId);
