@@ -909,6 +909,9 @@
 
     <!-- ===== PAGE: MAINTENANCE ===== -->
     <div class="page" id="page-maintenance">
+      <div class="alert alert-info" style="margin-bottom:16px;">
+        💡 <strong>วิธีบันทึกการซ่อม:</strong> ไปที่ <strong>ทะเบียนเครื่องมือ</strong> → กดปุ่ม 👁️ ดูรายละเอียด → แท็บ <strong>ประวัติซ่อม</strong> → กด ➕ แจ้งซ่อมใหม่
+      </div>
       <div class="tabs">
         <div class="tab active" onclick="switchTab(this,'repair-pending')">🆘 รอดำเนินการ <span id="repairBadge" style="background:var(--danger);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;">0</span></div>
         <div class="tab" onclick="switchTab(this,'repair-inprogress')">🔄 กำลังดำเนินการ</div>
@@ -919,13 +922,10 @@
         <div class="card">
           <div class="card-header">
             <span>🆘</span><h3>งานซ่อมที่รอดำเนินการ</h3>
-            <div class="header-actions">
-              <button class="btn btn-primary btn-sm" onclick="openRepairModal()">➕ แจ้งซ่อม</button>
-            </div>
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>อาการ</th><th>แผนก</th><th>ผู้แจ้ง</th><th>วันแจ้ง</th><th>ความเร่งด่วน</th></tr></thead>
+              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>อาการ</th><th>แผนก</th><th>ผู้แจ้ง</th><th>วันแจ้ง</th><th>จัดการ</th></tr></thead>
               <tbody id="repairPendingBody">
                 <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่รอดำเนินการ</td></tr>
               </tbody>
@@ -939,7 +939,7 @@
           <div class="card-header"><span>🔄</span><h3>งานซ่อมที่กำลังดำเนินการ</h3></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>รายละเอียด</th><th>ผู้รับผิดชอบ</th><th>วันแจ้ง</th><th>สถานะ</th></tr></thead>
+              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>รายละเอียด</th><th>ผู้รับผิดชอบ</th><th>วันแจ้ง</th><th>จัดการ</th></tr></thead>
               <tbody id="repairInprogressBody">
                 <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ไม่มีงานที่กำลังดำเนินการ</td></tr>
               </tbody>
@@ -953,7 +953,7 @@
           <div class="card-header"><span>✅</span><h3>งานซ่อมที่เสร็จสิ้น</h3></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>รายละเอียด</th><th>Downtime (วัน)</th><th>ค่าซ่อม</th><th>วันเสร็จ</th></tr></thead>
+              <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>รายละเอียด</th><th>Downtime</th><th>ค่าซ่อม</th><th>วันเสร็จ</th></tr></thead>
               <tbody id="repairDoneBody">
                 <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่เสร็จสิ้น</td></tr>
               </tbody>
@@ -965,6 +965,9 @@
 
     <!-- ===== PAGE: PM (การบำรุงรักษา) ===== -->
     <div class="page" id="page-pm">
+      <div class="alert alert-info" style="margin-bottom:16px;">
+        💡 <strong>วิธีบันทึก PM:</strong> ไปที่ <strong>ทะเบียนเครื่องมือ</strong> → กดปุ่ม 👁️ ดูรายละเอียด → แท็บ <strong>ประวัติบำรุงรักษา</strong> → กด ➕ บันทึก PM
+      </div>
       <div class="tabs">
         <div class="tab active" onclick="switchTab(this,'pm-plan')">📅 แผน PM ประจำปี</div>
         <div class="tab" onclick="switchTab(this,'pm-history')">📋 ประวัติ PM</div>
@@ -973,9 +976,6 @@
         <div class="card">
           <div class="card-header">
             <span>📅</span><h3>แผนการบำรุงรักษาประจำปี</h3>
-            <div class="header-actions">
-              <button class="btn btn-primary btn-sm" onclick="openPMModal()">➕ เพิ่มแผน PM</button>
-            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -990,10 +990,7 @@
       <div class="tab-content" id="pm-history">
         <div class="card">
           <div class="card-header">
-            <span>📋</span><h3>ประวัติการบำรุงรักษา</h3>
-            <div class="header-actions">
-              <button class="btn btn-primary btn-sm" onclick="openPMModal()">➕ บันทึก PM</button>
-            </div>
+            <span>📋</span><h3>ประวัติการบำรุงรักษาทั้งหมด</h3>
           </div>
           <div class="table-wrap">
             <table>
@@ -1006,14 +1003,15 @@
         </div>
       </div>
     </div>
+
     <!-- ===== PAGE: CALIBRATION ===== -->
     <div class="page" id="page-calibration">
+      <div class="alert alert-info" style="margin-bottom:16px;">
+        💡 <strong>วิธีบันทึกสอบเทียบ:</strong> ไปที่ <strong>ทะเบียนเครื่องมือ</strong> → กดปุ่ม 👁️ ดูรายละเอียด → แท็บ <strong>ประวัติ Calibrate</strong> → กด ➕ บันทึก Calibrate
+      </div>
       <div class="card">
         <div class="card-header">
           <span>⚖️</span><h3>ทะเบียนสอบเทียบ/ตรวจสอบเครื่องมือแพทย์</h3>
-          <div class="header-actions">
-            <button class="btn btn-primary btn-sm" onclick="openCalibForm()">➕ บันทึกการสอบเทียบ</button>
-          </div>
         </div>
         <div class="card-body" style="padding-bottom:0;">
           <div class="filter-bar" style="margin-bottom:16px;">
@@ -1029,15 +1027,9 @@
           <table>
             <thead>
               <tr>
-                <th>รหัส</th>
-                <th>ชื่อเครื่อง</th>
-                <th>แผนก</th>
-                <th>วันสอบเทียบล่าสุด</th>
-                <th>สอบเทียบโดย</th>
-                <th>วันครบกำหนดถัดไป</th>
-                <th>ผล</th>
-                <th>เอกสาร</th>
-                <th>จัดการ</th>
+                <th>รหัส</th><th>ชื่อเครื่อง</th><th>แผนก</th>
+                <th>วันสอบเทียบล่าสุด</th><th>สอบเทียบโดย</th>
+                <th>วันครบกำหนดถัดไป</th><th>ผล</th><th>เอกสาร</th><th>จัดการ</th>
               </tr>
             </thead>
             <tbody id="calibBody"></tbody>
@@ -1051,6 +1043,9 @@
 
     <!-- ===== PAGE: BORROW ===== -->
     <div class="page" id="page-borrow">
+      <div class="alert alert-info" style="margin-bottom:16px;">
+        💡 <strong>วิธีบันทึกการยืม:</strong> ไปที่ <strong>ทะเบียนเครื่องมือ</strong> → กดปุ่ม 👁️ ดูรายละเอียด → แท็บ <strong>ประวัติยืม-คืน</strong> → กด ➕ บันทึกยืม
+      </div>
       <div class="tabs">
         <div class="tab active" onclick="switchTab(this,'borrow-active')">📤 กำลังยืม</div>
         <div class="tab" onclick="switchTab(this,'borrow-history')">📋 ประวัติการยืม</div>
@@ -1059,9 +1054,6 @@
         <div class="card">
           <div class="card-header">
             <span>📤</span><h3>รายการยืมเครื่องมือ (ที่ยังไม่คืน)</h3>
-            <div class="header-actions">
-              <button class="btn btn-primary btn-sm" onclick="openModal('addBorrowModal')">➕ บันทึกการยืม</button>
-            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -1075,7 +1067,7 @@
       </div>
       <div class="tab-content" id="borrow-history">
         <div class="card">
-          <div class="card-header"><span>📋</span><h3>ประวัติการยืม-คืน</h3></div>
+          <div class="card-header"><span>📋</span><h3>ประวัติการยืม-คืนทั้งหมด</h3></div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>เครื่องมือ</th><th>แผนก</th><th>ผู้ยืม</th><th>วันยืม</th><th>วันคืน</th><th>สภาพ</th></tr></thead>
@@ -4222,33 +4214,25 @@ function renderRepairPage() {
   const pb = document.getElementById('repairPendingBody');
   if (pb) pb.innerHTML = pending.length ? pending.map(r =>
     `<tr>
-      <td><strong style="color:var(--primary);">${r.equipCode}</strong></td>
+      <td><strong style="color:var(--primary);cursor:pointer;text-decoration:underline;" onclick="showPage('equipment');setTimeout(()=>viewEquipDetail('${r.equipCode}'),300)">${r.equipCode}</strong></td>
       <td>${r.equipName}</td>
       <td>${r.detail||'-'}</td>
       <td>${r.dept}</td>
       <td>${r.by||'-'}</td>
       <td>${cleanDateDisplay(r.date)}</td>
-      <td>
-        <button class="btn btn-warning btn-sm" onclick="openUpdateRepairStatus('${r.id}','${r.equipCode}')">
-          🔄 อัปเดตสถานะ
-        </button>
-      </td>
+      <td><button class="btn btn-warning btn-sm" onclick="openUpdateRepairStatus('${r.id}','${r.equipCode}')">🔄 อัปเดตสถานะ</button></td>
     </tr>`
   ).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่รอดำเนินการ</td></tr>';
 
   const ib = document.getElementById('repairInprogressBody');
   if (ib) ib.innerHTML = inprog.length ? inprog.map(r =>
     `<tr>
-      <td><strong style="color:var(--primary);">${r.equipCode}</strong></td>
+      <td><strong style="color:var(--primary);cursor:pointer;text-decoration:underline;" onclick="showPage('equipment');setTimeout(()=>viewEquipDetail('${r.equipCode}'),300)">${r.equipCode}</strong></td>
       <td>${r.equipName}</td>
       <td>${r.detail||'-'}</td>
       <td>${r.by||'-'}</td>
       <td>${cleanDateDisplay(r.date)}</td>
-      <td>
-        <button class="btn btn-success btn-sm" onclick="openUpdateRepairStatus('${r.id}','${r.equipCode}')">
-          ✅ อัปเดตสถานะ
-        </button>
-      </td>
+      <td><button class="btn btn-success btn-sm" onclick="openUpdateRepairStatus('${r.id}','${r.equipCode}')">✅ อัปเดตสถานะ</button></td>
     </tr>`
   ).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ไม่มีงานที่กำลังดำเนินการ</td></tr>';
 
@@ -4260,7 +4244,7 @@ function renderRepairPage() {
       <td>${r.detail||'-'}</td>
       <td style="text-align:center;">${r.downtimeDays||'-'}</td>
       <td>${r.cost||'-'}</td>
-      <td>${cleanDateDisplay(r.date)}</td>
+      <td>${cleanDateDisplay(r.finishDate||r.date)}</td>
     </tr>`
   ).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีงานซ่อมที่เสร็จสิ้น</td></tr>';
 }
