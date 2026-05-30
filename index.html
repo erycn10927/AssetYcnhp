@@ -2750,8 +2750,10 @@ function submitRepair() {
   const badge = document.getElementById('repairBadge');
   if (badge) badge.textContent = parseInt(badge.textContent || '0') + 1;
 
-  // re-render หน้าซ่อมแซม
+  // re-render ทุกหน้าที่เกี่ยวข้อง
   renderRepairPage();
+  renderDashboard();
+  updateDashboardStats();
 
   // ถ้า viewEquipModal เปิดอยู่ ให้ re-render ประวัติซ่อมด้วย
   if (document.getElementById('viewEquipModal')?.classList.contains('open')) {
@@ -4065,7 +4067,10 @@ async function syncBorrowToSheet(borrowRecord) {
 function updateDashboardStats() {
   const total = equipmentData.length;
   const ready = equipmentData.filter(e => e.status === 'พร้อมใช้งาน').length;
-  const repair = equipmentData.filter(e => e.status === 'กำลังซ่อม' || e.status === 'ส่งซ่อม').length;
+  const repair = equipmentData.filter(e => 
+    e.status === 'กำลังซ่อม' || e.status === 'ส่งซ่อม' || 
+    e.status === 'ส่งซ่อมภายนอก' || e.status === 'รอจัดหา' || e.status === 'ชำรุด'
+  ).length;
   const pct = total > 0 ? Math.round(ready/total*100) : 0;
 
   // นับครบกำหนดสอบเทียบ (ภายใน 30 วัน หรือเกินแล้ว)
@@ -4263,8 +4268,12 @@ function renderRepairPage() {
   allRepairs.sort((a,b) => b.id.localeCompare(a.id));
 
   const pending = allRepairs.filter(r => r.status === 'รอดำเนินการ');
-  const inprog  = allRepairs.filter(r => r.status === 'กำลังซ่อม' || r.status === 'รอวัสดุ' || r.status === 'ส่งซ่อมนอก');
-  const done    = allRepairs.filter(r => r.status === 'เสร็จสิ้น');
+  const inprog  = allRepairs.filter(r => 
+    r.status === 'กำลังซ่อม' || r.status === 'กำลังดำเนินการ' || 
+    r.status === 'รอวัสดุ' || r.status === 'รอชิ้นส่วน' || r.status === 'ส่งซ่อมนอก' || 
+    r.status === 'ส่งซ่อมภายนอก'
+  );
+  const done = allRepairs.filter(r => r.status === 'เสร็จสิ้น');
 
   const badge = document.getElementById('repairBadge');
   if (badge) badge.textContent = pending.length;
@@ -4596,6 +4605,8 @@ function saveRepairStatus() {
 
   closeModal('updateRepairModal');
   renderRepairPage();
+  renderDashboard();
+  updateDashboardStats();
 
   if (document.getElementById('viewEquipModal')?.classList.contains('open')) {
     renderHistoryRepair(equipCode);
