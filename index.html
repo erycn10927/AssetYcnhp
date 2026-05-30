@@ -4069,13 +4069,24 @@ async function syncBorrowToSheet(borrowRecord) {
 function updateDashboardStats() {
   const total = equipmentData.length;
   const ready = equipmentData.filter(e => e.status === 'พร้อมใช้งาน').length;
-  const repair = equipmentData.filter(e => 
-    e.status === 'กำลังซ่อม' || e.status === 'ส่งซ่อม' || 
-    e.status === 'ส่งซ่อมภายนอก' || e.status === 'รอจัดหา' || e.status === 'ชำรุด'
-  ).length;
   const pct = total > 0 ? Math.round(ready/total*100) : 0;
 
-  // นับครบกำหนดสอบเทียบ (ภายใน 30 วัน หรือเกินแล้ว)
+  // นับงานซ่อมที่ยังไม่เสร็จจาก equipHistory (แม้ status เครื่องยังไม่อัปเดต)
+  let repairCount = 0;
+  Object.values(equipHistory).forEach(function(h) {
+    (h.repair||[]).forEach(function(r) {
+      const s = r.status || '';
+      if (s !== 'เสร็จสิ้น') repairCount++;
+    });
+  });
+  // รวมกับเครื่องที่ status = กำลังซ่อม/ส่งซ่อม ฯลฯ
+  const equipRepair = equipmentData.filter(e =>
+    e.status === 'กำลังซ่อม' || e.status === 'ส่งซ่อมภายนอก' ||
+    e.status === 'รอจัดหา' || e.status === 'ชำรุด'
+  ).length;
+  const repair = Math.max(repairCount, equipRepair);
+
+  // นับครบกำหนดสอบเทียบ
   const calibDue = calibData.filter(c => {
     const st = getCalibStatus(c.nextDate);
     return st === 'over' || st === 'warn';
@@ -4086,7 +4097,7 @@ function updateDashboardStats() {
   const sr = document.getElementById('statReady');
   if (sr) { sr.textContent = ready; document.getElementById('statReadySub').textContent = pct + '% ของทั้งหมด'; }
   const srp = document.getElementById('statRepair');
-  if (srp) { srp.textContent = repair; document.getElementById('statRepairSub').textContent = 'รายการ'; }
+  if (srp) { srp.textContent = repair; document.getElementById('statRepairSub').textContent = repair > 0 ? 'รายการที่ยังไม่เสร็จ' : 'รายการ'; }
   const sc = document.getElementById('statCalib');
   if (sc) { sc.textContent = calibDue; document.getElementById('statCalibSub').textContent = calibDue > 0 ? 'ต้องดำเนินการด่วน' : 'ทุกเครื่องปกติ'; }
 }
