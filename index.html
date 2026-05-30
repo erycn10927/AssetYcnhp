@@ -2925,6 +2925,14 @@ function histHeader(cols, colWidths) {
 }
 
 // -- ประวัติซ่อม --
+// ===== SHARED CLEAN HELPER =====
+const cleanVal = (v) => {
+  if (v === null || v === undefined) return '';
+  const s = String(v).trim();
+  return (s === "'" || s === ',' || s === '-' || s === '' || s === 'null' || s === 'undefined') ? '' : s;
+};
+const cleanOrDash = (v) => cleanVal(v) || '-';
+
 function renderHistoryRepair(code) {
   const hist = getHistory(code).repair;
   const el = document.getElementById('repairHistBody');
@@ -2934,18 +2942,24 @@ function renderHistoryRepair(code) {
   const widths = '90px 1fr 120px 70px 80px 90px 60px';
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
-    ${hist.map(r => histRow([
-      histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
-      histCell(`<div style="font-weight:600;">${r.detail||'-'}</div>${r.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${r.note}</div>`:''}`),
-      histCell(r.by||'-', 'color:var(--text2);'),
-      histCell(r.downtimeDays||'-', 'color:var(--danger);font-weight:600;text-align:center;'),
-      histCell(r.cost ? r.cost+' บ.' : '-', 'color:var(--danger);font-weight:600;'),
-      histCell(`<span class="badge ${r.status==='เสร็จสิ้น'?'badge-success':'badge-warning'}">${r.status||'-'}</span>`),
-      histCell(`<div style="display:flex;gap:3px;">
-        <button class="icon-btn edit" onclick="editHistEntry('repair','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
-        <button class="icon-btn del" onclick="deleteHistEntry('repair','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
-      </div>`),
-    ], widths)).join('')}
+    ${hist.map(r => {
+      const rawCost = cleanVal(r.cost);
+      const costDisplay = rawCost && rawCost !== '0' ? rawCost+(rawCost.includes('บ')?'':' บ.') : '-';
+      const status = cleanVal(r.status) || 'รอดำเนินการ';
+      const sb = status==='เสร็จสิ้น' ? 'badge-success' : 'badge-warning';
+      return histRow([
+        histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
+        histCell(`<div style="font-weight:600;">${cleanOrDash(r.detail)}</div>${cleanVal(r.note)?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${cleanVal(r.note)}</div>`:''}`),
+        histCell(cleanOrDash(r.by), 'color:var(--text2);'),
+        histCell(cleanOrDash(r.downtimeDays), 'color:var(--danger);font-weight:600;text-align:center;'),
+        histCell(costDisplay, 'color:var(--danger);font-weight:600;'),
+        histCell(`<span class="badge ${sb}">${status}</span>`),
+        histCell(`<div style="display:flex;gap:3px;">
+          <button class="icon-btn edit" onclick="editHistEntry('repair','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
+          <button class="icon-btn del" onclick="deleteHistEntry('repair','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
+        </div>`),
+      ], widths);
+    }).join('')}
   </div>`;
 }
 
@@ -2957,23 +2971,20 @@ function renderHistoryPM(code) {
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติบำรุงรักษา'); return; }
   const cols = ['วันที่','รายละเอียด PM','ดำเนินการโดย','ค่าใช้จ่าย','ผล','หมายเหตุ',''];
   const widths = '90px 1fr 120px 80px 80px 100px 60px';
-
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => {
-      const detail = r.detail && r.detail !== "'" ? r.detail : '-';
-      const by = r.by && r.by !== "'" ? r.by : '-';
-      const cost = r.cost && r.cost !== "'" && r.cost !== '0' && r.cost !== '-' ? r.cost+' บ.' : '-';
-      const result = r.result && r.result !== "'" ? r.result : 'ผ่าน';
-      const note = r.note && r.note !== "'" ? r.note : '-';
-      const rb = result.includes('ผ่าน') && !result.includes('ไม่') ? 'badge-success' : result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-danger';
+      const rawCost = cleanVal(r.cost);
+      const costDisplay = rawCost && rawCost !== '0' ? rawCost+(rawCost.includes('บ')?'':' บ.') : '-';
+      const result = cleanVal(r.result) || 'ผ่าน';
+      const rb = result.includes('ไม่') ? 'badge-danger' : result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-success';
       return histRow([
         histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
-        histCell(`<div style="font-weight:600;">${detail}</div>`),
-        histCell(by, 'color:var(--text2);'),
-        histCell(cost, 'color:var(--success);font-weight:600;'),
+        histCell(`<div style="font-weight:600;">${cleanOrDash(r.detail)}</div>`),
+        histCell(cleanOrDash(r.by), 'color:var(--text2);'),
+        histCell(costDisplay, 'color:var(--success);font-weight:600;'),
         histCell(`<span class="badge ${rb}">${result}</span>`),
-        histCell(note, 'color:var(--text3);font-size:11px;'),
+        histCell(cleanOrDash(r.note), 'color:var(--text3);font-size:11px;'),
         histCell(`<div style="display:flex;gap:3px;">
           <button class="icon-btn edit" onclick="editHistEntry('pm','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
           <button class="icon-btn del" onclick="deleteHistEntry('pm','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
@@ -2989,7 +3000,6 @@ function renderHistoryCalib(code) {
   const el = document.getElementById('calibHistBody');
   document.getElementById('calibHistCount').textContent = `ประวัติสอบเทียบทั้งหมด ${hist.length} ครั้ง`;
   if (!hist.length) { el.innerHTML = histEmpty('ยังไม่มีประวัติสอบเทียบ'); return; }
-
   const cols = ['วันสอบเทียบ','ครบกำหนด','ดำเนินการโดย','ผลลัพธ์','เอกสาร','หมายเหตุ',''];
   const widths = '90px 90px 130px 110px 70px 1fr 60px';
   el.innerHTML = `
@@ -3000,7 +3010,8 @@ function renderHistoryCalib(code) {
     <div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
       ${histHeader(cols, widths)}
       ${hist.map(r => {
-        const badge = r.result==='ผ่าน' ? 'badge-success' : r.result&&r.result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-danger';
+        const result = cleanVal(r.result) || 'ผ่าน';
+        const badge = result === 'ผ่าน' ? 'badge-success' : result.includes('เงื่อนไข') ? 'badge-warning' : 'badge-danger';
         const calRec = calibData.find(c => c.id === r.id);
         const hasFiles = calRec && calRec.files && calRec.files.length > 0;
         const fileBtn = hasFiles
@@ -3009,10 +3020,10 @@ function renderHistoryCalib(code) {
         return histRow([
           histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
           histCell(`<span style="font-size:11px;color:var(--text2);">${cleanDateDisplay(r.nextDate)}</span>`),
-          histCell(r.by||'-', 'color:var(--text2);'),
-          histCell(`<span class="badge ${badge}">${r.result||'-'}</span>`),
+          histCell(cleanOrDash(r.by), 'color:var(--text2);'),
+          histCell(`<span class="badge ${badge}">${result}</span>`),
           histCell(fileBtn),
-          histCell(r.note || '-', 'color:var(--text3);font-size:11px;'),
+          histCell(cleanOrDash(r.note), 'color:var(--text3);font-size:11px;'),
           histCell(`<div style="display:flex;gap:3px;">
             <button class="icon-btn edit" onclick="editHistEntry('calib','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
             <button class="icon-btn del" onclick="deleteHistEntry('calib','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
@@ -3033,14 +3044,15 @@ function renderHistoryBorrow(code) {
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
     ${histHeader(cols, widths)}
     ${hist.map(r => {
-      const badge = r.status==='คืนแล้ว' ? 'badge-success' : 'badge-warning';
+      const status = cleanVal(r.status) || 'ยังไม่คืน';
+      const badge = status === 'คืนแล้ว' ? 'badge-success' : 'badge-warning';
       return histRow([
         histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.dateOut)}</span>`),
-        histCell(`<span style="font-size:11px;${r.dateIn==='-'?'color:var(--warning);font-weight:700;':''}">${cleanDateDisplay(r.dateIn)}</span>`),
-        histCell(r.borrower||'-', 'font-weight:600;'),
-        histCell(r.dept||'-', 'font-size:11px;color:var(--text2);'),
-        histCell(r.reason || '-', 'color:var(--text3);font-size:11px;'),
-        histCell(`<span class="badge ${badge}">${r.status}</span>`),
+        histCell(`<span style="font-size:11px;${status==='ยังไม่คืน'?'color:var(--warning);font-weight:700;':''}">${cleanDateDisplay(r.dateIn)}</span>`),
+        histCell(cleanOrDash(r.borrower), 'font-weight:600;'),
+        histCell(cleanOrDash(r.dept), 'font-size:11px;color:var(--text2);'),
+        histCell(cleanOrDash(r.reason), 'color:var(--text3);font-size:11px;'),
+        histCell(`<span class="badge ${badge}">${status}</span>`),
         histCell(`<div style="display:flex;gap:3px;">
           <button class="icon-btn edit" onclick="editHistEntry('borrow','${code}','${r.id}')" title="แก้ไข" style="width:26px;height:26px;font-size:12px;">✏️</button>
           <button class="icon-btn del" onclick="deleteHistEntry('borrow','${code}','${r.id}')" title="ลบ" style="width:26px;height:26px;font-size:12px;">🗑️</button>
@@ -4289,17 +4301,21 @@ function renderPMPage() {
       });
     });
     allPM.sort((a,b) => b.id.localeCompare(a.id));
-    histBody.innerHTML = allPM.length ? allPM.map(p =>
-      `<tr>
-        <td>${p.date||'-'}</td>
+    const cleanV = (v) => { const s = String(v||'').trim(); return (s==="'"||s===','||s==='-'||s==='') ? '-' : s; };
+    histBody.innerHTML = allPM.length ? allPM.map(p => {
+      const rawCost = cleanV(p.cost);
+      const costDisplay = rawCost !== '-' && rawCost !== '0' ? rawCost+(rawCost.includes('บ')?'':' บ.') : '-';
+      const resultBadge = cleanV(p.result).includes('ไม่') ? 'badge-danger' : cleanV(p.result).includes('เงื่อนไข') ? 'badge-warning' : 'badge-success';
+      return `<tr>
+        <td>${cleanDateDisplay(p.date)}</td>
         <td><strong>${p.equipCode}</strong><br><span style="font-size:11px;color:var(--text3);">${p.equipName}</span></td>
         <td>${p.dept}</td>
-        <td>${p.detail||'-'}</td>
-        <td>${p.by||'-'}</td>
-        <td>${p.cost||'-'}</td>
-        <td><span class="badge badge-success">${p.result||'✅ ผ่าน'}</span></td>
-      </tr>`
-    ).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีประวัติการบำรุงรักษา</td></tr>';
+        <td>${cleanV(p.detail)}</td>
+        <td>${cleanV(p.by)}</td>
+        <td style="color:var(--success);font-weight:600;">${costDisplay}</td>
+        <td><span class="badge ${resultBadge}">${cleanV(p.result)||'ผ่าน'}</span></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">ยังไม่มีประวัติการบำรุงรักษา</td></tr>';
   }
 }
 
