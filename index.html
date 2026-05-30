@@ -2750,6 +2750,15 @@ function submitRepair() {
   const badge = document.getElementById('repairBadge');
   if (badge) badge.textContent = parseInt(badge.textContent || '0') + 1;
 
+  // re-render หน้าซ่อมแซม
+  renderRepairPage();
+
+  // ถ้า viewEquipModal เปิดอยู่ ให้ re-render ประวัติซ่อมด้วย
+  if (document.getElementById('viewEquipModal')?.classList.contains('open')) {
+    renderHistoryRepair(code);
+  }
+
+  resetRepairModalBtn();
   closeModal('addRepairModal');
   showToast(`🆘 แจ้งซ่อม ${equip ? equip.name : code} เรียบร้อย — Downtime: ${downtimeDays}`);
 }
@@ -2915,8 +2924,9 @@ function histEmpty(msg) {
 }
 
 function histRow(cols, colWidths) {
+  const cells = Array.isArray(cols) ? cols.join('') : cols;
   return `<div style="display:grid;grid-template-columns:${colWidths};gap:0;border-bottom:1px solid #EDF1F5;transition:background 0.15s;"
-    onmouseover="this.style.background='#F6F9FC'" onmouseout="this.style.background=''">${cols}</div>`;
+    onmouseover="this.style.background='#F6F9FC'" onmouseout="this.style.background=''">${cells}</div>`;
 }
 
 function histCell(content, style='') {
