@@ -3886,12 +3886,14 @@ async function gasCall(params) {
       res = await fetch(url, { redirect: 'follow' });
       json = await res.json();
     } else {
-      // POST — GAS รองรับ CORS ผ่าน fetch mode cors ตามปกติ
+      // POST — ส่งเป็น FormData เพื่อหลีกเลี่ยง CORS preflight
+      const formData = new FormData();
+      formData.append('payload', JSON.stringify(params.body));
+
       res = await fetch(GAS_URL, {
         method: 'POST',
+        body: formData,
         redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(params.body),
       });
       json = await res.json();
     }
