@@ -2618,6 +2618,8 @@ function addEquipment() {
     batteryDate: isoToThaiDate(batteryISO),
     lifespan: '',  // คำนวณอัตโนมัติจาก receiveDate ไม่ต้องบันทึกค่าคงที่
     serial: document.getElementById('newSerial').value || '-',
+    source: document.getElementById('newSource').value || '-',
+    pmFreq: document.getElementById('newPMFreq').value || 'รายปี',
     note: document.getElementById('newNote').value || '',
   };
 
@@ -2720,16 +2722,19 @@ function submitRepair() {
     note: document.getElementById('repairNote')?.value || '',
   };
 
-  // เพิ่มเข้า equipHistory
+  // เพิ่มเข้า equipHistory — บันทึก field ครบถ้วนทุกช่อง
   const hist = getHistory(code);
   hist.repair.unshift({
     id: repairRecord.id,
     date: thDate,
     detail: symptom,
-    by,
+    by: by,
     cost: repairRecord.cost,
     status: 'รอดำเนินการ',
-    note: `Downtime: ${downtimeDays} | ${repairRecord.note}`,
+    downtimeDays: downtimeDays,
+    downtimeStart: repairRecord.downtimeStart,
+    downtimeEnd: repairRecord.downtimeEnd,
+    note: document.getElementById('repairNote')?.value || '',
   });
 
   // อัปเดต status เครื่องมือ
@@ -2877,7 +2882,7 @@ function viewEquipDetail(code) {
     ['🛡️ วันหมดประกัน', formatStickerDate(e.warrantyEnd)],
     ['🔋 เปลี่ยนแบตล่าสุด', formatStickerDate(e.batteryDate)],
     ['📆 ความถี่ PM', e.pmFreq || 'รายปี'],
-    ['🏷️ แหล่งงบประมาณ', e.source || '-'],
+    ['🏷️ แหล่งงบประมาณ', e.source && e.source !== '-' ? e.source : '-'],
   ];
   document.getElementById('viewEquipBody').innerHTML =
     fields.map(([label, val]) => `
@@ -2947,9 +2952,11 @@ function renderHistoryRepair(code) {
       const costDisplay = rawCost && rawCost !== '0' ? rawCost+(rawCost.includes('บ')?'':' บ.') : '-';
       const status = cleanVal(r.status) || 'รอดำเนินการ';
       const sb = status==='เสร็จสิ้น' ? 'badge-success' : status.includes('กำลัง') ? 'badge-warning' : status.includes('รอ') ? 'badge-danger' : 'badge-info';
+      // fallback: ข้อมูลเก่าจาก Sheets อาจเก็บใน 'symptom' แทน 'detail'
+      const detail = cleanVal(r.detail) || cleanVal(r.symptom) || '-';
       return histRow([
         histCell(`<span style="font-size:11px;">${cleanDateDisplay(r.date)}</span>`),
-        histCell(`<div style="font-weight:600;">${cleanOrDash(r.detail)}</div>`),
+        histCell(`<div style="font-weight:600;">${detail}</div>`),
         histCell(cleanOrDash(r.by), 'color:var(--text2);'),
         histCell(`<span class="badge ${sb}">${status}</span>`),
         histCell(costDisplay, 'color:var(--danger);font-weight:600;'),
@@ -3198,7 +3205,10 @@ function saveHistEntry(isEdit) {
       id: newId, date: thDate, detail: detailVal, by: byVal||'-',
       cost: cost ? Number(cost).toLocaleString('th-TH') : '-',
       status: document.getElementById('hi_status')?.value || 'เสร็จสิ้น',
-      downtimeDays, note: noteVal,
+      downtimeDays: downtimeDays,
+      downtimeStart: dtStart ? isoToThaiDate(dtStart) : '-',
+      downtimeEnd: dtEnd ? isoToThaiDate(dtEnd) : '-',
+      note: noteVal,
     };
     if (editId) {
       const idx = hist.repair.findIndex(x => x.id === editId);
@@ -3305,6 +3315,7 @@ function editEquip(code) {
   document.getElementById('editStatus').value = e.status || 'พร้อมใช้งาน';
   document.getElementById('editNote').value = e.note || '';
   if (document.getElementById('editPMFreq')) document.getElementById('editPMFreq').value = e.pmFreq || 'รายปี';
+  if (document.getElementById('editSource')) document.getElementById('editSource').value = e.source || 'งบประมาณแผ่นดิน';
 
   openModal('editEquipModal');
 }
@@ -3340,6 +3351,7 @@ function saveEditEquip() {
     lifespan: '',  // คำนวณอัตโนมัติ ไม่บันทึกค่าคงที่
     status: document.getElementById('editStatus').value,
     pmFreq: document.getElementById('editPMFreq') ? document.getElementById('editPMFreq').value : equipmentData[idx].pmFreq,
+    source: document.getElementById('editSource') ? document.getElementById('editSource').value : equipmentData[idx].source,
     note: document.getElementById('editNote').value,
   };
 
@@ -3929,9 +3941,16 @@ async function loadAllFromSheets() {
       const hist = getHistory(row.equipCode);
       if (!hist.repair.find(r => r.id === row.id)) {
         hist.repair.push({
-          id: row.id, date: row.repairDate, detail: row.symptom,
-          by: row.by, cost: row.cost, status: row.status,
-          note: `Downtime: ${row.downtimeDays||'-'} | ${row.note||''}`,
+          id: row.id,
+          date: row.repairDate || '-',
+          detail: row.symptom || '-',
+          by: row.by || '-',
+          cost: row.cost || '-',
+          status: row.status || 'รอดำเนินการ',
+          downtimeDays: row.downtimeDays || '-',
+          downtimeStart: row.downtimeStart || '-',
+          downtimeEnd: row.downtimeEnd || '-',
+          note: row.note || '',
         });
       }
     });
@@ -4382,34 +4401,50 @@ function editHistEntry(type, code, id) {
   if (!r) return;
   _currentViewCode = code;
 
-  // เปิด modal addHistModal พร้อมกรอกข้อมูลเดิม
-  document.getElementById('addHistType').value = type;
-  document.getElementById('addHistEquipCode').value = code;
-
-  // helper แปลง Thai date → ISO
   const thToISO = (td) => {
     if (!td || td==='-') return '';
-    const p = td.split('/');
+    const p = String(td).split('/');
     if (p.length !== 3) return '';
     const ce = parseInt(p[2]) > 2400 ? parseInt(p[2])-543 : parseInt(p[2]);
     return ce+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
   };
 
   if (type === 'repair') {
-    document.getElementById('addHistIcon').textContent = '🔧';
-    document.getElementById('addHistTitle').textContent = 'แก้ไขประวัติการซ่อม';
-    document.getElementById('addHistFormBody').innerHTML = `
-      <input type="hidden" id="hi_editid" value="${id}">
-      <div class="form-group"><label>วันที่ซ่อม *</label><input type="date" id="hi_date" value="${thToISO(r.date)}"></div>
-      <div class="form-group"><label>ค่าใช้จ่าย (บาท)</label><input type="number" id="hi_cost" value="${(r.cost||'').replace(/[^0-9]/g,'')}"></div>
-      <div class="form-group full"><label>รายละเอียดการซ่อม *</label><textarea id="hi_detail">${r.detail||''}</textarea></div>
-      <div class="form-group"><label>ดำเนินการโดย</label><input id="hi_by" value="${r.by||''}"></div>
-      <div class="form-group"><label>สถานะ</label>
-        <select id="hi_status"><option ${r.status==='เสร็จสิ้น'?'selected':''}>เสร็จสิ้น</option><option ${r.status==='กำลังดำเนินการ'?'selected':''}>กำลังดำเนินการ</option><option ${r.status==='รอชิ้นส่วน'?'selected':''}>รอชิ้นส่วน</option></select>
-      </div>
-      <div class="form-group full"><label>หมายเหตุ</label><textarea id="hi_note">${r.note||''}</textarea></div>`;
+    // เปิด addRepairModal แบบเดียวกับแจ้งซ่อม พร้อม pre-fill ข้อมูลเดิม
+    const sel = document.getElementById('repairEquipCode');
+    if (sel) {
+      sel.innerHTML = '<option value="">-- เลือกเครื่องมือจากทะเบียน --</option>';
+      equipmentData.forEach(e => {
+        sel.innerHTML += `<option value="${e.code}"${e.code===code?' selected':''}>${e.code} – ${e.name} (${e.dept})</option>`;
+      });
+      autoFillRepairEquip(code);
+    }
+    // กรอกข้อมูลเดิม
+    document.getElementById('repairDate').value = thToISO(r.date);
+    document.getElementById('repairSymptom').value = cleanVal(r.detail) || '';
+    document.getElementById('repairBy').value = cleanVal(r.by) || '';
+    document.getElementById('repairCost').value = (r.cost||'').replace(/[^0-9]/g,'');
+    document.getElementById('repairNote').value = cleanVal(r.note) || '';
+    if (r.downtimeStart && r.downtimeStart !== '-') document.getElementById('repairDowntimeStart').value = thToISO(r.downtimeStart);
+    if (r.downtimeEnd && r.downtimeEnd !== '-') {
+      document.getElementById('repairDowntimeEnd').value = thToISO(r.downtimeEnd);
+      calcDowntime();
+    }
+    // เปลี่ยนปุ่มให้ save edit แทน
+    const saveBtn = document.querySelector('#addRepairModal .btn-danger[onclick*="submitRepair"]');
+    if (saveBtn) {
+      saveBtn.textContent = '💾 บันทึกการแก้ไข';
+      saveBtn.onclick = function() { saveEditRepair(id, code); };
+    }
+    openModal('addRepairModal');
+    return;
+  }
 
-  } else if (type === 'pm') {
+  // PM, Calib, Borrow — ใช้ addHistModal
+  document.getElementById('addHistType').value = type;
+  document.getElementById('addHistEquipCode').value = code;
+
+  if (type === 'pm') {
     document.getElementById('addHistIcon').textContent = '🛠️';
     document.getElementById('addHistTitle').textContent = 'แก้ไขประวัติ PM';
     document.getElementById('addHistFormBody').innerHTML = `
@@ -4454,6 +4489,57 @@ function editHistEntry(type, code, id) {
   // patch saveHistSaveBtn ให้รู้ว่ากำลัง edit
   document.getElementById('addHistSaveBtn').onclick = function() { saveHistEntry(true); };
   openModal('addHistModal');
+}
+
+
+// ===== SAVE EDIT REPAIR =====
+function saveEditRepair(repairId, equipCode) {
+  const code = document.getElementById('repairEquipCode')?.value || equipCode;
+  const symptom = document.getElementById('repairSymptom')?.value?.trim();
+  const by = document.getElementById('repairBy')?.value?.trim();
+  const dateVal = document.getElementById('repairDate')?.value;
+  const cost = document.getElementById('repairCost')?.value;
+  const note = document.getElementById('repairNote')?.value || '';
+  const dtStart = document.getElementById('repairDowntimeStart')?.value;
+  const dtEnd = document.getElementById('repairDowntimeEnd')?.value;
+
+  if (!symptom) { alert('กรุณาระบุอาการ/รายละเอียด'); return; }
+
+  let downtimeDays = '-';
+  if (dtStart && dtEnd) {
+    const d = Math.round((new Date(dtEnd) - new Date(dtStart)) / (1000*60*60*24));
+    if (d >= 0) downtimeDays = d + ' วัน';
+  }
+
+  const hist = getHistory(code);
+  const idx = hist.repair.findIndex(x => x.id === repairId);
+  if (idx > -1) {
+    hist.repair[idx] = {
+      ...hist.repair[idx],
+      date: isoToThaiDate(dateVal),
+      detail: symptom,
+      by: by || '-',
+      cost: cost ? Number(cost).toLocaleString('th-TH') : '-',
+      note: note,
+      downtimeDays: downtimeDays,
+      downtimeStart: dtStart ? isoToThaiDate(dtStart) : '-',
+      downtimeEnd: dtEnd ? isoToThaiDate(dtEnd) : '-',
+    };
+  }
+
+  resetRepairModalBtn();
+  closeModal('addRepairModal');
+  renderHistoryRepair(code);
+  renderRepairPage();
+  showToast('✅ แก้ไขประวัติการซ่อมแล้ว');
+}
+
+function resetRepairModalBtn() {
+  const saveBtn = document.querySelector('#addRepairModal .btn-danger');
+  if (saveBtn) {
+    saveBtn.textContent = '🆘 แจ้งซ่อม';
+    saveBtn.onclick = submitRepair;
+  }
 }
 
 function openUpdateRepairStatus(repairId, equipCode) {
