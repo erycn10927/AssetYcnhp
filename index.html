@@ -4006,6 +4006,15 @@ async function loadAllFromSheets() {
 
   setSyncStatus('ok', `โหลดข้อมูลจาก Sheets แล้ว • ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`);
   showToast('✅ โหลดข้อมูลจาก Google Sheets เรียบร้อย');
+
+  // re-render ทุกหน้าหลังโหลดข้อมูลใหม่
+  renderEquipTable(equipmentData);
+  renderCalibTable(calibData);
+  renderRepairPage();
+  renderPMPage();
+  renderBorrowPage();
+  renderDashboard();
+  updateDashboardStats();
 }
 
 // ===== ROW CONVERTERS =====
