@@ -3886,13 +3886,15 @@ async function gasCall(params) {
       res = await fetch(url, { redirect: 'follow' });
       json = await res.json();
     } else {
-      // POST — ส่งเป็น FormData เพื่อหลีกเลี่ยง CORS preflight
-      const formData = new FormData();
-      formData.append('payload', JSON.stringify(params.body));
+      // POST — ส่งเป็น URLSearchParams (application/x-www-form-urlencoded)
+      // GAS รับได้ผ่าน e.postData.contents หรือ e.parameter.payload
+      const payload = JSON.stringify(params.body);
+      const body = new URLSearchParams();
+      body.append('payload', payload);
 
       res = await fetch(GAS_URL, {
         method: 'POST',
-        body: formData,
+        body: body,
         redirect: 'follow',
       });
       json = await res.json();
