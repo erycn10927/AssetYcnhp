@@ -4044,17 +4044,12 @@ async function gasCall(params) {
       res = await fetch(url, { redirect: 'follow' });
       json = await res.json();
     } else {
-      // POST — ส่งเป็น URLSearchParams (application/x-www-form-urlencoded)
-      // GAS รับได้ผ่าน e.postData.contents หรือ e.parameter.payload
+      // POST — GAS Web App มี redirect ทำให้ body หาย
+      // วิธีที่ได้ผลที่สุดคือ ส่ง payload เป็น query string ใน URL
+      // แล้วใช้ GET แทน POST (GAS รองรับทั้งสองแบบผ่าน doGet)
       const payload = JSON.stringify(params.body);
-      const body = new URLSearchParams();
-      body.append('payload', payload);
-
-      res = await fetch(GAS_URL, {
-        method: 'POST',
-        body: body,
-        redirect: 'follow',
-      });
+      const url = GAS_URL + '?payload=' + encodeURIComponent(payload);
+      res = await fetch(url, { redirect: 'follow' });
       json = await res.json();
     }
 
