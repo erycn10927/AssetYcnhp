@@ -950,7 +950,12 @@
 
       <div class="tab-content" id="repair-done">
         <div class="card">
-          <div class="card-header"><span>✅</span><h3>งานซ่อมที่เสร็จสิ้น</h3></div>
+          <div class="card-header">
+            <span>✅</span><h3>งานซ่อมที่เสร็จสิ้น</h3>
+            <div class="header-actions">
+              <button class="btn btn-success btn-sm" onclick="exportRepairExcel()">📥 Export Excel</button>
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>รหัสเครื่อง</th><th>ชื่อเครื่องมือ</th><th>รายละเอียด</th><th>Downtime</th><th>ค่าซ่อม</th><th>วันเสร็จ</th></tr></thead>
@@ -1133,6 +1138,7 @@
             <div style="font-size:36px;margin-bottom:10px;">💰</div>
             <div style="font-weight:700;font-size:15px;">รายงานค่าใช้จ่าย</div>
             <div style="font-size:12px;color:var(--text3);margin-top:4px;">ซ่อมบำรุง / จัดซื้อ</div>
+            <button onclick="event.stopPropagation();exportRepairCostExcel()" class="btn btn-outline btn-sm" style="margin-top:10px;font-size:11px;">📥 Export Excel</button>
           </div>
         </div>
         <div class="card" style="cursor:pointer;" onclick="generateLifespanReport()">
@@ -1140,6 +1146,7 @@
             <div style="font-size:36px;margin-bottom:10px;">📊</div>
             <div style="font-weight:700;font-size:15px;">รายงานอายุเครื่องมือ</div>
             <div style="font-size:12px;color:var(--text3);margin-top:4px;">วิเคราะห์ตามอายุ</div>
+            <button onclick="event.stopPropagation();exportLifespanExcel()" class="btn btn-outline btn-sm" style="margin-top:10px;font-size:11px;">📥 Export Excel</button>
           </div>
         </div>
         <div class="card" style="cursor:pointer;" onclick="generatePMReport()">
@@ -1147,6 +1154,7 @@
             <div style="font-size:36px;margin-bottom:10px;">📋</div>
             <div style="font-weight:700;font-size:15px;">รายงาน PM ประจำปี</div>
             <div style="font-size:12px;color:var(--text3);margin-top:4px;">แผน vs ผลดำเนินการ</div>
+            <button onclick="event.stopPropagation();exportPMExcel()" class="btn btn-outline btn-sm" style="margin-top:10px;font-size:11px;">📥 Export Excel</button>
           </div>
         </div>
       </div>
@@ -3497,8 +3505,11 @@ function renderCalibTable(data) {
     const st = getCalibStatus(c.nextDate);
     const hasFiles = c.files && c.files.length > 0;
     const fileBtn = hasFiles
-      ? `<button class="btn btn-primary btn-sm" onclick="viewCalibDoc('${c.id}')">📄 ดูเอกสาร <span style="background:rgba(255,255,255,0.3);padding:1px 5px;border-radius:8px;font-size:10px;">${c.files.length}</span></button>`
-      : `<button class="btn btn-outline btn-sm" style="color:var(--text3);" onclick="openCalibFormEdit('${c.id}')">📎 แนบเอกสาร</button>`;
+      ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">
+           <button class="btn btn-primary btn-sm" onclick="viewCalibDoc('${c.id}')">📄 ดู (${c.files.length})</button>
+           <button class="btn btn-outline btn-sm" onclick="editCalibDocs('${c.id}')" title="แก้ไขเอกสาร" style="font-size:11px;">✏️📎</button>
+         </div>`
+      : `<button class="btn btn-outline btn-sm" style="color:var(--text3);" onclick="editCalibDocs('${c.id}')">📎 แนบเอกสาร</button>`;
     return `<tr>
       <td><strong style="color:var(--primary);">${c.equipCode}</strong></td>
       <td>
@@ -3794,32 +3805,179 @@ function downloadDocFile(calibId, idx) {
 
 // ===== UNIVERSAL FILE VIEWER =====
 function openFileViewer(name, type, dataURL) {
-  const preview = document.getElementById('viewDocPreview');
-  if (preview) {
-    if (type === 'application/pdf') {
-      preview.innerHTML = `<div style="margin-top:12px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
-        <div style="background:var(--primary);color:#fff;padding:8px 14px;font-size:12px;font-weight:600;">📕 ${name}</div>
-        <iframe src="${dataURL}" style="width:100%;height:500px;border:none;display:block;"></iframe>
-      </div>`;
-    } else if (type.startsWith('image/')) {
-      preview.innerHTML = `<div style="margin-top:12px;text-align:center;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
-        <div style="background:var(--primary);color:#fff;padding:8px 14px;font-size:12px;font-weight:600;text-align:left;">🖼️ ${name}</div>
-        <img src="${dataURL}" style="max-width:100%;max-height:500px;object-fit:contain;display:block;margin:auto;padding:12px;">
-      </div>`;
-    } else {
-      // Office files – offer download
-      preview.innerHTML = `<div style="margin-top:12px;padding:20px;text-align:center;background:#FFF8E8;border:1px solid #F0C060;border-radius:var(--radius-sm);">
-        <div style="font-size:32px;margin-bottom:8px;">📝</div>
-        <div style="font-size:13px;font-weight:600;">ไฟล์ ${name}</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px;">ไม่สามารถแสดงตัวอย่างในเบราว์เซอร์ได้ กรุณาดาวน์โหลดเพื่อเปิด</div>
-      </div>`;
+  // เปิดในหน้าต่างใหม่เสมอ — ชัดเจน ไม่ขึ้นกับ modal ที่เปิดอยู่
+  if (type === 'application/pdf') {
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(`<!DOCTYPE html><html><head><title>${name}</title></head>
+        <body style="margin:0;padding:0;background:#333;">
+        <embed src="${dataURL}" type="application/pdf" width="100%" height="100%" style="position:fixed;inset:0;">
+        </body></html>`);
+      w.document.close();
     }
-    preview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else if (type && type.startsWith('image/')) {
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(`<!DOCTYPE html><html><head><title>${name}</title></head>
+        <body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;">
+        <img src="${dataURL}" style="max-width:100%;max-height:100vh;object-fit:contain;">
+        </body></html>`);
+      w.document.close();
+    }
   } else {
-    // Fallback: open in new tab
-    const w = window.open();
-    if (w) { w.document.write(`<img src="${dataURL}" style="max-width:100%;">`); }
+    // Office/Word/อื่นๆ — ดาวน์โหลดเลย
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = name;
+    a.click();
+    showToast('⬇️ กำลังดาวน์โหลด ' + name);
   }
+}
+
+// ===== EDIT ATTACHED DOCUMENTS =====
+function editCalibDocs(calibId) {
+  // เปิด form แก้ไขเฉพาะ section เอกสาร โดยไม่ต้องแก้ข้อมูลอื่น
+  const c = calibData.find(x => x.id === calibId);
+  if (!c) return;
+  calibFilesTemp = [...(c.files || [])];
+
+  // สร้าง mini modal สำหรับแก้ไขเอกสารอย่างเดียว
+  const overlay = document.createElement('div');
+  overlay.id = 'editDocsOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <span>📎</span>
+        <h3 style="font-size:15px;font-weight:700;">แก้ไขเอกสารแนบ — ${c.equipCode}</h3>
+        <button onclick="document.getElementById('editDocsOverlay').remove()" style="margin-left:auto;width:30px;height:30px;border:none;background:var(--bg);border-radius:50%;cursor:pointer;font-size:15px;">✕</button>
+      </div>
+      <div style="padding:20px;">
+        <div style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;cursor:pointer;background:#FAFCFF;"
+          onclick="document.getElementById('editDocsFileInput').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--primary)'"
+          ondragleave="this.style.borderColor='var(--border)'"
+          ondrop="handleEditDocsDrop(event)">
+          <div style="font-size:28px;margin-bottom:8px;">📂</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text2);">คลิกหรือลากไฟล์มาวางที่นี่</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">PDF, JPG, PNG, Word • ไม่เกิน 10MB</div>
+        </div>
+        <input type="file" id="editDocsFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display:none;" onchange="handleEditDocsFiles(this.files)">
+        <div id="editDocsFileList" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;">
+        <button onclick="document.getElementById('editDocsOverlay').remove()" style="padding:8px 16px;border:1.5px solid var(--border);background:#fff;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;">ยกเลิก</button>
+        <button onclick="saveEditDocs('${calibId}')" style="padding:8px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;">💾 บันทึกเอกสาร</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  renderEditDocsList();
+}
+
+function renderEditDocsList() {
+  const el = document.getElementById('editDocsFileList');
+  if (!el) return;
+  if (calibFilesTemp.length === 0) { el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;">ยังไม่มีเอกสารแนบ</div>'; return; }
+  el.innerHTML = calibFilesTemp.map((f, i) => {
+    const icon = f.type === 'application/pdf' ? '📕' : f.type && f.type.startsWith('image') ? '🖼️' : '📝';
+    const size = f.size < 1024*1024 ? Math.round(f.size/1024) + ' KB' : (f.size/1024/1024).toFixed(1) + ' MB';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F4F8FC;border:1px solid var(--border);border-radius:8px;">
+      <span style="font-size:18px;">${icon}</span>
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</div>
+      <div style="font-size:11px;color:var(--text3);">${size}</div></div>
+      <button onclick="openFileViewer('${f.name}','${f.type}','${f.dataURL.substring(0,30)}...')" onclick="previewEditDoc(${i})" style="background:var(--info);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">👁️ ดู</button>
+      <button onclick="removeEditDoc(${i})" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function previewEditDoc(idx) { const f = calibFilesTemp[idx]; if(f) openFileViewer(f.name, f.type, f.dataURL); }
+function removeEditDoc(idx) { calibFilesTemp.splice(idx, 1); renderEditDocsList(); }
+
+function handleEditDocsFiles(fileList) {
+  Array.from(fileList).forEach(f => {
+    if (f.size > 10*1024*1024) { alert(`ไฟล์ "${f.name}" ขนาดเกิน 10MB`); return; }
+    const reader = new FileReader();
+    reader.onload = e => { calibFilesTemp.push({ name:f.name, type:f.type, size:f.size, dataURL:e.target.result }); renderEditDocsList(); };
+    reader.readAsDataURL(f);
+  });
+  document.getElementById('editDocsFileInput').value = '';
+}
+
+function handleEditDocsDrop(event) {
+  event.preventDefault();
+  handleEditDocsFiles(event.dataTransfer.files);
+}
+
+function saveEditDocs(calibId) {
+  const idx = calibData.findIndex(x => x.id === calibId);
+  if (idx > -1) {
+    calibData[idx].files = [...calibFilesTemp];
+    renderCalibTable(calibData);
+    syncCalibToSheet(calibData[idx]);
+    showToast('✅ อัปเดตเอกสารแนบเรียบร้อยแล้ว');
+  }
+  document.getElementById('editDocsOverlay').remove();
+}
+
+// ===== EXPORT EXCEL HELPERS =====
+function exportToExcel(headers, rows, filename) {
+  // สร้าง CSV แบบ UTF-8 BOM ที่ Excel เปิดได้
+  const esc = v => { const s = String(v||'-').replace(/"/g,'""'); return (s.includes(',')||s.includes('"')||s.includes('\n')) ? `"${s}"` : s; };
+  const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.map(esc).join(','))].join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('📥 Export ' + rows.length + ' รายการเรียบร้อย');
+}
+
+function exportRepairExcel() {
+  const headers = ['id','equipCode','equipName','dept','repairDate','downtimeStart','downtimeEnd','downtimeDays','symptom','repairType','urgency','by','cost','status','note','createdAt'];
+  const rows = [];
+  Object.entries(equipHistory).forEach(([code, h]) => {
+    (h.repair||[]).forEach(r => {
+      const e = equipmentData.find(x => x.code === code);
+      rows.push([r.id||'-', code, e?e.name:code, e?e.dept:'-', r.date||'-',
+        r.downtimeStart||'-', r.downtimeEnd||'-', r.downtimeDays||'-',
+        r.detail||'-', '-', '-', r.by||'-', r.cost||'-', r.status||'-', r.note||'-', '-']);
+    });
+  });
+  exportToExcel(headers, rows, 'repair_history');
+}
+
+function exportRepairCostExcel() {
+  const headers = ['รหัสเครื่อง','ชื่อเครื่องมือ','แผนก','รายละเอียด','วันที่','ค่าใช้จ่าย','สถานะ'];
+  const rows = [];
+  Object.entries(equipHistory).forEach(([code, h]) => {
+    (h.repair||[]).forEach(r => {
+      const e = equipmentData.find(x => x.code === code);
+      rows.push([code, e?e.name:code, e?e.dept:'-', r.detail||'-', r.date||'-', r.cost||'-', r.status||'-']);
+    });
+  });
+  exportToExcel(headers, rows, 'repair_cost_report');
+}
+
+function exportLifespanExcel() {
+  const headers = ['รหัส','ชื่อเครื่องมือ','แผนก','วันรับเครื่อง','อายุการใช้งาน','สถานะ'];
+  const rows = equipmentData.map(e => {
+    const life = e.receiveDate && e.receiveDate !== '-' ? calcLifespan(e.receiveDate) : '-';
+    return [e.code, e.name, e.dept, e.receiveDate||'-', life, e.status];
+  });
+  exportToExcel(headers, rows, 'equipment_lifespan_report');
+}
+
+function exportPMExcel() {
+  const headers = ['วันที่','รหัสเครื่อง','ชื่อเครื่องมือ','แผนก','รายละเอียด PM','ดำเนินการโดย','ค่าใช้จ่าย','ผล'];
+  const rows = [];
+  Object.entries(equipHistory).forEach(([code, h]) => {
+    (h.pm||[]).forEach(p => {
+      const e = equipmentData.find(x => x.code === code);
+      rows.push([p.date||'-', code, e?e.name:code, e?e.dept:'-', p.detail||'-', p.by||'-', p.cost||'-', p.result||'-']);
+    });
+  });
+  exportToExcel(headers, rows, 'pm_report');
 }
 
 // Init calibration table on load + sync to equipHistory
@@ -4045,7 +4203,12 @@ async function syncEquipToSheet(equip) {
 
 async function syncRepairToSheet(repairData) {
   if (!GAS_URL) return;
-  await gasCall({ body: { action: 'saveRepair', data: { ...repairData, createdAt: '' } } });
+  const result = await gasCall({ body: { action: 'saveRepair', data: { ...repairData, createdAt: '' } } });
+  if (result) {
+    console.log('syncRepair result:', JSON.stringify(result));
+  } else {
+    console.warn('syncRepair failed - no result');
+  }
 }
 
 async function syncPMToSheet(pmData) {
