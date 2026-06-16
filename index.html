@@ -4259,20 +4259,24 @@ async function syncCalibToSheet(calibRecord) {
   for (const f of filesToUpload) {
     setSyncStatus('loading', `กำลังอัปโหลด ${f.name}...`);
     try {
-      // แบ่ง base64 เป็น chunks แล้วส่งทีละ chunk ผ่าน gasCall (GET+query)
-      const CHUNK_SIZE = 50000; // ~50KB ต่อ chunk
-      const base64 = f.dataURL;
-      const totalChunks = Math.ceil(base64.length / CHUNK_SIZE);
-      const uploadId = 'UP-' + Date.now();
+      // ตัด header ออกก่อน เช่น "data:application/pdf;base64,..."
+      const base64Raw = f.dataURL.includes(',') ? f.dataURL.split(',')[1] : f.dataURL;
+      const mimeType = f.type || 'application/pdf';
+
+      // แบ่ง chunk เล็กๆ ~5KB เพื่อให้ URL ไม่เกิน limit
+      const CHUNK_SIZE = 5000;
+      const totalChunks = Math.ceil(base64Raw.length / CHUNK_SIZE);
+      const uploadId = 'UP-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+      let uploadSuccess = true;
 
       for (let i = 0; i < totalChunks; i++) {
-        const chunk = base64.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        const chunk = base64Raw.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
         const res = await gasCall({ body: {
           action: 'uploadChunk',
           data: {
             uploadId: uploadId,
             fileName: f.name,
-            mimeType: f.type || 'application/octet-stream',
+            mimeType: mimeType,
             chunk: chunk,
             chunkIndex: i,
             totalChunks: totalChunks,
@@ -4280,16 +4284,20 @@ async function syncCalibToSheet(calibRecord) {
         }});
         if (!res || !res.ok) {
           console.warn('Chunk upload failed:', i, res);
+          uploadSuccess = false;
           break;
         }
         setSyncStatus('loading', `อัปโหลด ${f.name} (${Math.round((i+1)/totalChunks*100)}%)...`);
       }
 
-      // ขอ assemble chunks เป็นไฟล์
-      const finalRes = await gasCall({ body: {
-        action: 'assembleFile',
-        data: { uploadId: uploadId, fileName: f.name, mimeType: f.type }
-      }});
+      // ถ้า upload ทุก chunk สำเร็จ → assemble
+      let finalRes = null;
+      if (uploadSuccess) {
+        finalRes = await gasCall({ body: {
+          action: 'assembleFile',
+          data: { uploadId: uploadId, fileName: f.name, mimeType: mimeType }
+        }});
+      }
 
       if (finalRes && finalRes.ok && finalRes.file && finalRes.file.fileId) {
         uploadedFiles.push({
