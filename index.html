@@ -1176,12 +1176,12 @@
           <div class="card-header"><span>🏥</span><h3>ข้อมูลโรงพยาบาล</h3></div>
           <div class="card-body">
             <div class="form-grid">
-              <div class="form-group full"><label>ชื่อโรงพยาบาล</label><input value="โรงพยาบาลยางชุมน้อย"></div>
-              <div class="form-group"><label>รหัสสถานพยาบาล</label><input value="10660"></div>
-              <div class="form-group"><label>จังหวัด</label><input value="ศรีสะเกษ"></div>
-              <div class="form-group full"><label>ที่อยู่</label><input value="ต.ยางชุมน้อย อ.ยางชุมน้อย จ.ศรีสะเกษ 33190"></div>
+              <div class="form-group full"><label>ชื่อโรงพยาบาล</label><input id="settHospName" value="โรงพยาบาลยางชุมน้อย"></div>
+              <div class="form-group"><label>รหัสสถานพยาบาล</label><input id="settHospCode" value="10660"></div>
+              <div class="form-group"><label>จังหวัด</label><input id="settHospProvince" value="ศรีสะเกษ"></div>
+              <div class="form-group full"><label>ที่อยู่</label><input id="settHospAddr" value="ต.ยางชุมน้อย อ.ยางชุมน้อย จ.ศรีสะเกษ 33190"></div>
             </div>
-            <div style="margin-top:16px;"><button class="btn btn-primary">💾 บันทึก</button></div>
+            <div style="margin-top:16px;"><button class="btn btn-primary" onclick="saveHospSettings()">💾 บันทึก</button></div>
           </div>
         </div>
         <div class="card">
@@ -2081,7 +2081,10 @@ function thaiDateToISO(td) {
 
 // Calculate lifespan from receiveDate (Thai BE dd/mm/yyyy) to today → "X ปี Y เดือน"
 function calcLifespan(thaiDate) {
-  const iso = thaiDateToISO(thaiDate);
+  if (!thaiDate || thaiDate === '-') return '-';
+  // ถ้ามี GMT ให้ผ่าน formatStickerDate ก่อน
+  const cleaned = formatStickerDate(thaiDate);
+  const iso = thaiDateToISO(cleaned);
   if (!iso) return '-';
   const start = new Date(iso);
   const now = new Date();
@@ -3724,15 +3727,21 @@ function renderCalibFileList() {
   if (!el) return;
   if (calibFilesTemp.length === 0) { el.innerHTML = ''; return; }
   el.innerHTML = calibFilesTemp.map((f, i) => {
-    const icon = f.type === 'application/pdf' ? '📕' : f.type.startsWith('image') ? '🖼️' : '📝';
-    const size = f.size < 1024*1024 ? Math.round(f.size/1024) + ' KB' : (f.size/1024/1024).toFixed(1) + ' MB';
+    const name = f.name || f.fileName || 'เอกสาร';
+    const isOnDrive = !!f.fileId;
+    const icon = (f.type || f.mimeType || '') === 'application/pdf' || name.endsWith('.pdf') ? '📕' :
+                 (f.type || f.mimeType || '').startsWith('image') ? '🖼️' : '📝';
+    const sizeStr = f.size ? (f.size < 1024*1024 ? Math.round(f.size/1024) + ' KB' : (f.size/1024/1024).toFixed(1) + ' MB') : (isOnDrive ? '☁️ Google Drive' : '');
+    const viewBtn = isOnDrive
+      ? `<a href="${f.viewUrl}" target="_blank" style="background:var(--info);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;text-decoration:none;font-family:inherit;">👁️ ดู</a>`
+      : `<button onclick="previewTempFile(${i})" style="background:var(--info);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">👁️ ดู</button>`;
     return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F4F8FC;border:1px solid var(--border);border-radius:var(--radius-sm);">
       <span style="font-size:18px;">${icon}</span>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</div>
-        <div style="font-size:11px;color:var(--text3);">${size}</div>
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
+        <div style="font-size:11px;color:var(--text3);">${sizeStr}</div>
       </div>
-      <button onclick="previewTempFile(${i})" style="background:var(--info);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">👁️ ดู</button>
+      ${viewBtn}
       <button onclick="removeTempFile(${i})" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit;">✕</button>
     </div>`;
   }).join('');
@@ -3764,21 +3773,28 @@ function viewCalibDoc(calibId) {
     fileList.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">📭</div>
       <div style="font-size:14px;font-weight:600;">ยังไม่มีเอกสารแนบ</div>
-      <div style="font-size:12px;margin-top:6px;">กด <strong>✏️ แก้ไข</strong> เพื่อแนบไฟล์เอกสาร</div>
-      <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="closeModal('viewDocModal');openCalibFormEdit('${c.id}')">📎 แนบเอกสารตอนนี้</button>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="closeModal('viewDocModal');editCalibDocs('${c.id}')">📎 แนบเอกสารตอนนี้</button>
     </div>`;
   } else {
     fileList.innerHTML = c.files.map((f, i) => {
-      const icon = f.type === 'application/pdf' ? '📕' : f.type.startsWith('image') ? '🖼️' : '📝';
-      const size = f.size < 1024*1024 ? Math.round(f.size/1024) + ' KB' : (f.size/1024/1024).toFixed(1) + ' MB';
+      const name = f.name || f.fileName || 'เอกสาร';
+      const isOnDrive = !!(f.fileId || f.viewUrl || f.fromDrive);
+      const icon = (f.mimeType||f.type||'').includes('pdf') || name.endsWith('.pdf') ? '📕'
+                 : (f.mimeType||f.type||'').startsWith('image') ? '🖼️' : '📝';
+      const size = f.size ? (f.size < 1024*1024 ? Math.round(f.size/1024) + ' KB' : (f.size/1024/1024).toFixed(1) + ' MB') : '☁️ Drive';
+      const viewBtn = isOnDrive
+        ? `<a href="${f.viewUrl}" target="_blank" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;text-decoration:none;font-family:inherit;display:inline-block;">👁️ เปิดดู</a>`
+        : `<button onclick="previewDocFile('${calibId}',${i})" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;">👁️ เปิดดู</button>`;
+      const dlBtn = isOnDrive
+        ? `<a href="${f.downloadUrl||f.viewUrl}" target="_blank" style="background:var(--success);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;text-decoration:none;font-family:inherit;display:inline-block;">⬇️ ดาวน์โหลด</a>`
+        : `<button onclick="downloadDocFile('${calibId}',${i})" style="background:var(--success);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;">⬇️ ดาวน์โหลด</button>`;
       return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#F4F8FC;border:1px solid var(--border);border-radius:var(--radius-sm);">
         <span style="font-size:24px;">${icon}</span>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;">${f.name}</div>
+          <div style="font-size:13px;font-weight:600;">${name}</div>
           <div style="font-size:11px;color:var(--text3);">${size}</div>
         </div>
-        <button onclick="previewDocFile('${calibId}',${i})" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;">👁️ เปิดดู</button>
-        <button onclick="downloadDocFile('${calibId}',${i})" style="background:var(--success);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;">⬇️ ดาวน์โหลด</button>
+        ${viewBtn} ${dlBtn}
       </div>`;
     }).join('');
   }
@@ -4102,6 +4118,7 @@ async function loadAllFromSheets() {
     res.calib.forEach(row => calibData.unshift(sheetRowToCalib(row)));
     renderCalibTable(calibData);
     syncAllCalibToHistory();
+    restoreCalibFiles();
   }
 
   // ===== Repair history =====
@@ -4213,7 +4230,69 @@ async function syncPMToSheet(pmData) {
 
 async function syncCalibToSheet(calibRecord) {
   if (!GAS_URL) return;
-  await gasCall({ body: { action: 'saveCalib', data: { ...calibRecord, createdAt: '' } } });
+
+  // อัปโหลดไฟล์ที่ยังไม่มี fileId ไปยัง Google Drive
+  const filesWithId = [];
+  for (const f of (calibRecord.files || [])) {
+    if (f.fileId) {
+      // มี fileId แล้ว = อยู่บน Drive แล้ว
+      filesWithId.push({ fileId: f.fileId, fileName: f.name || f.fileName, mimeType: f.type || f.mimeType, viewUrl: f.viewUrl, downloadUrl: f.downloadUrl });
+    } else if (f.dataURL) {
+      // ยังเป็น base64 — อัปโหลดไป Drive
+      setSyncStatus('loading', `กำลังอัปโหลด ${f.name}...`);
+      const res = await gasCall({ body: { action: 'uploadCalibFile', data: {
+        base64: f.dataURL,
+        fileName: f.name,
+        mimeType: f.type || 'application/octet-stream',
+      }}});
+      if (res && res.ok && res.file && res.file.fileId) {
+        filesWithId.push({ fileId: res.file.fileId, fileName: f.name, mimeType: f.type, viewUrl: res.file.viewUrl, downloadUrl: res.file.downloadUrl });
+      } else {
+        // อัปโหลดไม่สำเร็จ เก็บ base64 ไว้ก่อน
+        filesWithId.push(f);
+      }
+    }
+  }
+
+  // อัปเดต calibRecord ด้วย files ที่มี fileId แล้ว
+  calibRecord.files = filesWithId;
+  // อัปเดต calibData ด้วย
+  const idx = calibData.findIndex(c => c.id === calibRecord.id);
+  if (idx > -1) calibData[idx].files = filesWithId;
+
+  // ส่งข้อมูลไป Sheets (ไม่รวม base64)
+  const driveLinks = filesWithId.map(f => f.viewUrl || '').filter(Boolean).join(', ');
+  const dataToSync = {
+    ...calibRecord,
+    files: undefined,
+    fileLinks: driveLinks, // เก็บ link ใน Sheets
+  };
+  const result = await gasCall({ body: { action: 'saveCalib', data: { ...dataToSync, createdAt: '' } } });
+  if (result) {
+    console.log('syncCalib:', result.action);
+    renderCalibTable(calibData);
+  }
+}
+
+function restoreCalibFiles() {
+  // ไม่จำเป็นแล้ว เพราะ files อยู่บน Drive
+  // แต่โหลด viewUrl กลับมาเพื่อแสดงปุ่มดู
+  calibData.forEach(function(c) {
+    if (c.files && c.files.length > 0) return; // มีแล้ว
+    // ถ้า Sheets มี fileLinks ให้แปลงกลับ
+    if (c.fileLinks) {
+      const links = c.fileLinks.split(',').map(l => l.trim()).filter(Boolean);
+      if (links.length > 0) {
+        c.files = links.map(url => ({
+          fileId: url.match(/\/d\/([^/]+)\//)?.[1] || '',
+          fileName: 'เอกสาร.pdf',
+          mimeType: 'application/pdf',
+          viewUrl: url,
+          fromDrive: true,
+        }));
+      }
+    }
+  });
 }
 
 async function syncDeleteCalibToSheet(id) {
@@ -4898,12 +4977,46 @@ showPage = function(id) {
     if (id === 'maintenance') renderRepairPage();
     if (id === 'pm')          renderPMPage();
     if (id === 'borrow')      renderBorrowPage();
-    if (id === 'settings')    { updateSettingsCounts(); renderUserMgmt(); }
+    if (id === 'settings')    { updateSettingsCounts(); renderUserMgmt(); loadHospSettings(); }
   }, 100);
 };
 
 
-// ===== AUTH SYSTEM =====
+// ===== HOSPITAL SETTINGS =====
+function saveHospSettings() {
+  const settings = {
+    name: document.getElementById('settHospName')?.value || 'โรงพยาบาลยางชุมน้อย',
+    code: document.getElementById('settHospCode')?.value || '10660',
+    province: document.getElementById('settHospProvince')?.value || 'ศรีสะเกษ',
+    addr: document.getElementById('settHospAddr')?.value || '',
+  };
+  localStorage.setItem('ymn_hosp_settings', JSON.stringify(settings));
+  // อัปเดต sidebar
+  applyHospSettings(settings);
+  showToast('✅ บันทึกข้อมูลโรงพยาบาลแล้ว');
+}
+
+function loadHospSettings() {
+  try {
+    const stored = localStorage.getItem('ymn_hosp_settings');
+    if (!stored) return;
+    const s = JSON.parse(stored);
+    // กรอกกลับเข้า form
+    if (document.getElementById('settHospName')) document.getElementById('settHospName').value = s.name || '';
+    if (document.getElementById('settHospCode')) document.getElementById('settHospCode').value = s.code || '';
+    if (document.getElementById('settHospProvince')) document.getElementById('settHospProvince').value = s.province || '';
+    if (document.getElementById('settHospAddr')) document.getElementById('settHospAddr').value = s.addr || '';
+    applyHospSettings(s);
+  } catch(e) {}
+}
+
+function applyHospSettings(s) {
+  // อัปเดต sidebar hospital name ถ้ามี
+  const nameEl = document.querySelector('.sidebar-logo h1');
+  if (nameEl && s.name) nameEl.textContent = s.name;
+  const subEl = document.querySelector('.sidebar-logo span');
+  if (subEl && s.province) subEl.textContent = 'จังหวัด' + s.province;
+}
 // ฐานข้อมูลผู้ใช้ (เก็บใน localStorage เพื่อคงอยู่หลัง refresh)
 function getUsers() {
   const stored = localStorage.getItem('ymn_users');
@@ -5132,7 +5245,7 @@ function deleteUser(id) {
 checkSession();
 
 // render dashboard ทันทีตอนเปิด
-setTimeout(function() { renderDashboard(); updateDashboardStats(); }, 200);
+setTimeout(function() { renderDashboard(); updateDashboardStats(); loadHospSettings(); }, 200);
 
 // ===== INIT =====
 createSyncIndicator();
