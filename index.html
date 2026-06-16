@@ -1686,22 +1686,21 @@
         </div>
         <div class="form-group full"><label>หมายเหตุ</label><textarea id="calibNote" placeholder="รายละเอียดการสอบเทียบ ค่าผลลัพธ์ เงื่อนไข ฯลฯ"></textarea></div>
 
-        <!-- FILE ATTACH SECTION -->
+        <!-- FILE ATTACH SECTION — ใช้ Google Drive URL แทน upload โดยตรง -->
         <div class="form-group full">
           <label>📎 แนบเอกสาร (ใบรับรอง / รายงานผล)</label>
-          <div id="calibDropZone" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;background:#FAFCFF;"
-            onclick="document.getElementById('calibFileInput').click()"
-            ondragover="event.preventDefault();this.style.borderColor='var(--primary)';this.style.background='#EBF5FF'"
-            ondragleave="this.style.borderColor='var(--border)';this.style.background='#FAFCFF'"
-            ondrop="handleCalibDrop(event)">
-            <div style="font-size:28px;margin-bottom:8px;">📂</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text2);">คลิกหรือลากไฟล์มาวางที่นี่</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px;">รองรับ PDF, JPG, PNG, Word • ขนาดไม่เกิน 10MB ต่อไฟล์</div>
+          <div style="background:#F0F7FF;border:1px solid #B5D4F4;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;font-size:12px;color:#165A94;">
+            <strong>📌 วิธีแนบเอกสาร:</strong><br>
+            1. อัปโหลดไฟล์ขึ้น <a href="https://drive.google.com" target="_blank" style="color:var(--primary);font-weight:700;">Google Drive</a><br>
+            2. คลิกขวาที่ไฟล์ → <strong>"รับลิงก์"</strong> → เลือก <strong>"ทุกคนที่มีลิงก์"</strong><br>
+            3. คัดลอก URL มาวางด้านล่าง
           </div>
-          <input type="file" id="calibFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display:none;" onchange="handleCalibFiles(this.files)">
-
-          <!-- File Preview List -->
-          <div id="calibFileList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <input id="calibDriveUrl" type="url" placeholder="วาง Google Drive URL ที่นี่ เช่น https://drive.google.com/file/d/..." 
+              style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;">
+            <button onclick="addCalibDriveUrl()" style="padding:8px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;white-space:nowrap;">+ เพิ่ม</button>
+          </div>
+          <div id="calibFileList" style="display:flex;flex-direction:column;gap:6px;"></div>
         </div>
       </div>
     </div>
@@ -3722,24 +3721,50 @@ function handleCalibDrop(event) {
   handleCalibFiles(event.dataTransfer.files);
 }
 
+function addCalibDriveUrl() {
+  const input = document.getElementById('calibDriveUrl');
+  const url = (input?.value || '').trim();
+  if (!url) { alert('กรุณาวาง URL ก่อน'); return; }
+  if (!url.startsWith('http')) { alert('URL ไม่ถูกต้อง'); return; }
+
+  // แปลง Drive URL ให้เป็น view URL มาตรฐาน
+  const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const fileId = fileIdMatch ? fileIdMatch[1] : null;
+  const viewUrl = fileId ? `https://drive.google.com/file/d/${fileId}/view` : url;
+  const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : url;
+
+  calibFilesTemp.push({
+    fileId: fileId || url,
+    fileName: 'เอกสาร_' + (calibFilesTemp.length + 1) + '.pdf',
+    name: 'เอกสาร_' + (calibFilesTemp.length + 1) + '.pdf',
+    mimeType: 'application/pdf',
+    type: 'application/pdf',
+    viewUrl: viewUrl,
+    downloadUrl: downloadUrl,
+    fromDrive: true,
+  });
+
+  input.value = '';
+  renderCalibFileList();
+  showToast('✅ เพิ่มเอกสารแล้ว กด "บันทึกการสอบเทียบ" เพื่อบันทึก');
+}
+
 function renderCalibFileList() {
   const el = document.getElementById('calibFileList');
   if (!el) return;
   if (calibFilesTemp.length === 0) { el.innerHTML = ''; return; }
   el.innerHTML = calibFilesTemp.map((f, i) => {
     const name = f.name || f.fileName || 'เอกสาร';
-    const isOnDrive = !!f.fileId;
-    const icon = (f.type || f.mimeType || '') === 'application/pdf' || name.endsWith('.pdf') ? '📕' :
-                 (f.type || f.mimeType || '').startsWith('image') ? '🖼️' : '📝';
-    const sizeStr = f.size ? (f.size < 1024*1024 ? Math.round(f.size/1024) + ' KB' : (f.size/1024/1024).toFixed(1) + ' MB') : (isOnDrive ? '☁️ Google Drive' : '');
+    const isOnDrive = !!(f.fileId || f.viewUrl || f.fromDrive);
+    const icon = isOnDrive ? '☁️' : '📄';
     const viewBtn = isOnDrive
-      ? `<a href="${f.viewUrl}" target="_blank" style="background:var(--info);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;text-decoration:none;font-family:inherit;">👁️ ดู</a>`
+      ? `<a href="${f.viewUrl}" target="_blank" style="background:var(--info);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;text-decoration:none;font-family:inherit;">👁️ ดู</a>`
       : `<button onclick="previewTempFile(${i})" style="background:var(--info);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">👁️ ดู</button>`;
     return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F4F8FC;border:1px solid var(--border);border-radius:var(--radius-sm);">
       <span style="font-size:18px;">${icon}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
-        <div style="font-size:11px;color:var(--text3);">${sizeStr}</div>
+        <div style="font-size:11px;color:var(--text3);">${isOnDrive ? '☁️ Google Drive' : 'Local file'}</div>
       </div>
       ${viewBtn}
       <button onclick="removeTempFile(${i})" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit;">✕</button>
@@ -4252,88 +4277,29 @@ async function syncPMToSheet(pmData) {
 async function syncCalibToSheet(calibRecord) {
   if (!GAS_URL) return;
 
-  const filesToUpload = (calibRecord.files || []).filter(f => f.dataURL && !f.fileId);
-  const filesAlreadyOnDrive = (calibRecord.files || []).filter(f => f.fileId);
-  const uploadedFiles = [...filesAlreadyOnDrive];
+  // ทุก file ตอนนี้เป็น Drive URL แล้ว ไม่ต้อง upload
+  const driveLinks = (calibRecord.files || [])
+    .map(f => f.viewUrl || f.url || '')
+    .filter(Boolean)
+    .join(', ');
 
-  for (const f of filesToUpload) {
-    setSyncStatus('loading', `กำลังอัปโหลด ${f.name}...`);
-    try {
-      // ตัด header ออกก่อน เช่น "data:application/pdf;base64,..."
-      const base64Raw = f.dataURL.includes(',') ? f.dataURL.split(',')[1] : f.dataURL;
-      const mimeType = f.type || 'application/pdf';
-
-      // แบ่ง chunk เล็กๆ ~5KB เพื่อให้ URL ไม่เกิน limit
-      const CHUNK_SIZE = 5000;
-      const totalChunks = Math.ceil(base64Raw.length / CHUNK_SIZE);
-      const uploadId = 'UP-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
-      let uploadSuccess = true;
-
-      for (let i = 0; i < totalChunks; i++) {
-        const chunk = base64Raw.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-        const res = await gasCall({ body: {
-          action: 'uploadChunk',
-          data: {
-            uploadId: uploadId,
-            fileName: f.name,
-            mimeType: mimeType,
-            chunk: chunk,
-            chunkIndex: i,
-            totalChunks: totalChunks,
-          }
-        }});
-        if (!res || !res.ok) {
-          console.warn('Chunk upload failed:', i, res);
-          uploadSuccess = false;
-          break;
-        }
-        setSyncStatus('loading', `อัปโหลด ${f.name} (${Math.round((i+1)/totalChunks*100)}%)...`);
-      }
-
-      // ถ้า upload ทุก chunk สำเร็จ → assemble
-      let finalRes = null;
-      if (uploadSuccess) {
-        finalRes = await gasCall({ body: {
-          action: 'assembleFile',
-          data: { uploadId: uploadId, fileName: f.name, mimeType: mimeType }
-        }});
-      }
-
-      if (finalRes && finalRes.ok && finalRes.file && finalRes.file.fileId) {
-        uploadedFiles.push({
-          fileId: finalRes.file.fileId,
-          fileName: f.name, name: f.name,
-          mimeType: f.type, type: f.type,
-          viewUrl: finalRes.file.viewUrl,
-          downloadUrl: finalRes.file.downloadUrl,
-        });
-        console.log('Uploaded:', f.name, finalRes.file.fileId);
-      } else {
-        console.warn('Assemble failed:', finalRes);
-        uploadedFiles.push(f);
-      }
-    } catch(err) {
-      console.warn('Upload error:', err);
-      uploadedFiles.push(f);
-    }
-  }
-
-  calibRecord.files = uploadedFiles;
-  const idx = calibData.findIndex(c => c.id === calibRecord.id);
-  if (idx > -1) calibData[idx].files = uploadedFiles;
-
-  const driveLinks = uploadedFiles.map(f => f.viewUrl || '').filter(Boolean).join(', ');
   const dataToSync = {
-    id: calibRecord.id, equipCode: calibRecord.equipCode,
-    equipName: calibRecord.equipName, dept: calibRecord.dept,
-    calibDate: calibRecord.calibDate, nextDate: calibRecord.nextDate,
-    by: calibRecord.by, result: calibRecord.result, note: calibRecord.note,
-    fileLinks: driveLinks, createdAt: '',
+    id: calibRecord.id,
+    equipCode: calibRecord.equipCode,
+    equipName: calibRecord.equipName,
+    dept: calibRecord.dept,
+    calibDate: calibRecord.calibDate,
+    nextDate: calibRecord.nextDate,
+    by: calibRecord.by,
+    result: calibRecord.result,
+    note: calibRecord.note,
+    fileLinks: driveLinks,
+    createdAt: '',
   };
 
   const result = await gasCall({ body: { action: 'saveCalib', data: dataToSync } });
   if (result) {
-    console.log('syncCalib:', result.action, '| files:', uploadedFiles.length, '| links:', driveLinks);
+    console.log('syncCalib:', result.action, '| links:', driveLinks);
     renderCalibTable(calibData);
     setSyncStatus('ok', `ซิงค์แล้ว • ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`);
   }
@@ -5047,7 +5013,36 @@ showPage = function(id) {
 };
 
 
-// ===== HOSPITAL SETTINGS =====
+async function gasCallPost(body) {
+  // GAS Web App มี redirect — ต้องใช้ no-cors หรือ follow redirect แบบ manual
+  // วิธีที่ใช้ได้: ส่ง JSON ใน body แบบ text/plain (ไม่ trigger preflight)
+  if (!GAS_URL) return null;
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      redirect: 'follow',
+    });
+    if (!res.ok) {
+      console.warn('gasCallPost HTTP error:', res.status);
+      return null;
+    }
+    return await res.json();
+  } catch(err) {
+    // CORS failed — fallback ไปใช้ GET+query (แต่จะ truncate ถ้า payload ใหญ่)
+    console.warn('gasCallPost CORS failed, trying GET fallback');
+    try {
+      const payload = encodeURIComponent(JSON.stringify(body));
+      const url = GAS_URL + '?payload=' + payload;
+      const res2 = await fetch(url, { redirect: 'follow' });
+      return await res2.json();
+    } catch(err2) {
+      console.warn('gasCallPost fallback also failed:', err2.message);
+      return null;
+    }
+  }
+}
 function saveHospSettings() {
   const settings = {
     name: document.getElementById('settHospName')?.value || 'โรงพยาบาลยางชุมน้อย',
