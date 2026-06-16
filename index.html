@@ -4199,10 +4199,31 @@ function sheetRowToEquip(row) {
   };
 }
 function sheetRowToCalib(row) {
+  // โหลด fileLinks จาก Sheets กลับมาเป็น files array
+  let files = [];
+  if (row.fileLinks) {
+    const links = String(row.fileLinks).split(',').map(l => l.trim()).filter(l => l.startsWith('http'));
+    files = links.map(url => {
+      const fileIdMatch = url.match(/\/d\/([^/]+)\//);
+      const fileId = fileIdMatch ? fileIdMatch[1] : '';
+      return {
+        fileId: fileId,
+        fileName: 'เอกสาร.pdf',
+        name: 'เอกสาร.pdf',
+        mimeType: 'application/pdf',
+        type: 'application/pdf',
+        viewUrl: url,
+        downloadUrl: fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : url,
+        fromDrive: true,
+      };
+    });
+  }
   return {
     id: row.id, equipCode: row.equipCode, equipName: row.equipName,
     dept: row.dept, calibDate: row.calibDate, nextDate: row.nextDate,
-    by: row.by, result: row.result, note: row.note, files: [],
+    by: row.by, result: row.result, note: row.note,
+    fileLinks: row.fileLinks || '',
+    files: files,
   };
 }
 
@@ -4231,46 +4252,82 @@ async function syncPMToSheet(pmData) {
 async function syncCalibToSheet(calibRecord) {
   if (!GAS_URL) return;
 
-  // อัปโหลดไฟล์ที่ยังไม่มี fileId ไปยัง Google Drive
-  const filesWithId = [];
-  for (const f of (calibRecord.files || [])) {
-    if (f.fileId) {
-      // มี fileId แล้ว = อยู่บน Drive แล้ว
-      filesWithId.push({ fileId: f.fileId, fileName: f.name || f.fileName, mimeType: f.type || f.mimeType, viewUrl: f.viewUrl, downloadUrl: f.downloadUrl });
-    } else if (f.dataURL) {
-      // ยังเป็น base64 — อัปโหลดไป Drive
-      setSyncStatus('loading', `กำลังอัปโหลด ${f.name}...`);
-      const res = await gasCall({ body: { action: 'uploadCalibFile', data: {
-        base64: f.dataURL,
-        fileName: f.name,
-        mimeType: f.type || 'application/octet-stream',
-      }}});
-      if (res && res.ok && res.file && res.file.fileId) {
-        filesWithId.push({ fileId: res.file.fileId, fileName: f.name, mimeType: f.type, viewUrl: res.file.viewUrl, downloadUrl: res.file.downloadUrl });
-      } else {
-        // อัปโหลดไม่สำเร็จ เก็บ base64 ไว้ก่อน
-        filesWithId.push(f);
+  const filesToUpload = (calibRecord.files || []).filter(f => f.dataURL && !f.fileId);
+  const filesAlreadyOnDrive = (calibRecord.files || []).filter(f => f.fileId);
+  const uploadedFiles = [...filesAlreadyOnDrive];
+
+  for (const f of filesToUpload) {
+    setSyncStatus('loading', `กำลังอัปโหลด ${f.name}...`);
+    try {
+      // แบ่ง base64 เป็น chunks แล้วส่งทีละ chunk ผ่าน gasCall (GET+query)
+      const CHUNK_SIZE = 50000; // ~50KB ต่อ chunk
+      const base64 = f.dataURL;
+      const totalChunks = Math.ceil(base64.length / CHUNK_SIZE);
+      const uploadId = 'UP-' + Date.now();
+
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = base64.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        const res = await gasCall({ body: {
+          action: 'uploadChunk',
+          data: {
+            uploadId: uploadId,
+            fileName: f.name,
+            mimeType: f.type || 'application/octet-stream',
+            chunk: chunk,
+            chunkIndex: i,
+            totalChunks: totalChunks,
+          }
+        }});
+        if (!res || !res.ok) {
+          console.warn('Chunk upload failed:', i, res);
+          break;
+        }
+        setSyncStatus('loading', `อัปโหลด ${f.name} (${Math.round((i+1)/totalChunks*100)}%)...`);
       }
+
+      // ขอ assemble chunks เป็นไฟล์
+      const finalRes = await gasCall({ body: {
+        action: 'assembleFile',
+        data: { uploadId: uploadId, fileName: f.name, mimeType: f.type }
+      }});
+
+      if (finalRes && finalRes.ok && finalRes.file && finalRes.file.fileId) {
+        uploadedFiles.push({
+          fileId: finalRes.file.fileId,
+          fileName: f.name, name: f.name,
+          mimeType: f.type, type: f.type,
+          viewUrl: finalRes.file.viewUrl,
+          downloadUrl: finalRes.file.downloadUrl,
+        });
+        console.log('Uploaded:', f.name, finalRes.file.fileId);
+      } else {
+        console.warn('Assemble failed:', finalRes);
+        uploadedFiles.push(f);
+      }
+    } catch(err) {
+      console.warn('Upload error:', err);
+      uploadedFiles.push(f);
     }
   }
 
-  // อัปเดต calibRecord ด้วย files ที่มี fileId แล้ว
-  calibRecord.files = filesWithId;
-  // อัปเดต calibData ด้วย
+  calibRecord.files = uploadedFiles;
   const idx = calibData.findIndex(c => c.id === calibRecord.id);
-  if (idx > -1) calibData[idx].files = filesWithId;
+  if (idx > -1) calibData[idx].files = uploadedFiles;
 
-  // ส่งข้อมูลไป Sheets (ไม่รวม base64)
-  const driveLinks = filesWithId.map(f => f.viewUrl || '').filter(Boolean).join(', ');
+  const driveLinks = uploadedFiles.map(f => f.viewUrl || '').filter(Boolean).join(', ');
   const dataToSync = {
-    ...calibRecord,
-    files: undefined,
-    fileLinks: driveLinks, // เก็บ link ใน Sheets
+    id: calibRecord.id, equipCode: calibRecord.equipCode,
+    equipName: calibRecord.equipName, dept: calibRecord.dept,
+    calibDate: calibRecord.calibDate, nextDate: calibRecord.nextDate,
+    by: calibRecord.by, result: calibRecord.result, note: calibRecord.note,
+    fileLinks: driveLinks, createdAt: '',
   };
-  const result = await gasCall({ body: { action: 'saveCalib', data: { ...dataToSync, createdAt: '' } } });
+
+  const result = await gasCall({ body: { action: 'saveCalib', data: dataToSync } });
   if (result) {
-    console.log('syncCalib:', result.action);
+    console.log('syncCalib:', result.action, '| files:', uploadedFiles.length, '| links:', driveLinks);
     renderCalibTable(calibData);
+    setSyncStatus('ok', `ซิงค์แล้ว • ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`);
   }
 }
 
