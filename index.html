@@ -703,6 +703,9 @@
     <div class="nav-item" onclick="showPage('borrow')">
       <span class="nav-icon">📋</span> ยืม-คืน เครื่องมือ
     </div>
+    <div class="nav-item" onclick="showPage('decommission')">
+      <span class="nav-icon">🚫</span> ยกเลิกการใช้งานเครื่องมือ
+    </div>
 
     <div class="nav-section-label">คลังสินค้า</div>
     <div class="nav-item" onclick="showPage('inventory')">
@@ -1084,6 +1087,51 @@
         </div>
       </div>
     </div>
+    <!-- ===== PAGE: DECOMMISSION (ยกเลิกการใช้งาน) ===== -->
+    <div class="page" id="page-decommission">
+      <div class="card">
+        <div class="card-header">
+          <span>🚫</span>
+          <h3>ทะเบียนยกเลิกการใช้งานเครื่องมือแพทย์</h3>
+          <div class="header-actions">
+            <button class="btn btn-primary btn-sm" onclick="openDecomForm()">➕ สร้างใบยกเลิกใหม่</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding-bottom:0;">
+          <div class="alert alert-info" style="margin-bottom:16px;">
+            💡 แบบฟอร์ม <strong>DEC-MED-001</strong> (อ้างอิง HS4 ข้อ 6.2) — เลือกเครื่องมือจากทะเบียน ระบบจะดึงข้อมูลให้อัตโนมัติ บันทึกแล้วกด <strong>🖨️ พิมพ์ฟอร์ม</strong> เพื่อเสนอลงนามอนุมัติ และเก็บไว้เป็นหลักฐานอย่างน้อย 5 ปี
+          </div>
+          <div class="filter-bar" style="margin-bottom:16px;">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="ค้นหาเลขที่คำร้อง ชื่อเครื่อง หรือรหัส..." oninput="filterDecom(this.value)">
+            </div>
+            <select onchange="filterDecomStatus(this.value)">
+              <option value="">ทุกสถานะ</option>
+              <option value="ร่าง">📝 ร่าง</option>
+              <option value="รออนุมัติ">⏳ รออนุมัติ</option>
+              <option value="อนุมัติแล้ว">✅ อนุมัติแล้ว</option>
+              <option value="ไม่อนุมัติ">❌ ไม่อนุมัติ</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>เลขที่คำร้อง</th><th>เครื่องมือ</th><th>แผนก</th>
+                <th>เหตุผลหลัก</th><th>วันที่</th><th>สถานะ</th><th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="decomBody"></tbody>
+          </table>
+        </div>
+        <div style="padding:12px 20px;border-top:1px solid var(--border);">
+          <span style="font-size:13px;color:var(--text3);" id="decomCount">รวม 0 รายการ</span>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== PAGE: INVENTORY ===== -->
     <div class="page" id="page-inventory">
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
@@ -1978,6 +2026,109 @@
   </div>
 </div>
 
+<!-- ===== DECOMMISSION FORM MODAL (DEC-MED-001) ===== -->
+<div class="modal-overlay" id="addDecomModal">
+  <div class="modal" style="max-width:860px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#7A1C14,#C0392B);border-radius:12px 12px 0 0;">
+      <span style="font-size:20px;">🚫</span>
+      <div>
+        <div style="color:#fff;font-size:16px;font-weight:700;">แบบฟอร์มยกเลิกการใช้งานเครื่องมือทางการแพทย์</div>
+        <div style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:2px;">DEC-MED-001 • อ้างอิง HS4 ข้อ 6.2</div>
+      </div>
+      <button class="close-btn" onclick="closeModal('addDecomModal')" style="background:rgba(255,255,255,0.15);color:#fff;margin-left:auto;">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="decomEditId">
+
+      <!-- ส่วนที่ 1 -->
+      <div style="font-size:11px;font-weight:700;color:var(--primary);letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--primary);">ส่วนที่ 1 • ข้อมูลเครื่องมือทางการแพทย์</div>
+      <div class="form-grid" style="margin-bottom:18px;">
+        <div class="form-group full"><label>เลือกเครื่องมือจากทะเบียน *</label>
+          <select id="decomEquipCode" onchange="autoFillDecomEquip(this.value)">
+            <option value="">-- เลือกเครื่องมือ --</option>
+          </select>
+        </div>
+        <div class="form-group"><label>เลขที่คำร้อง</label><input id="decomReqNo" placeholder="เช่น DEC-69-0001"></div>
+        <div class="form-group"><label>มูลค่าคงเหลือ (บาท)</label><input id="decomResidual" type="number" placeholder="0"></div>
+        <div class="form-group full"><label>ข้อมูลเครื่องมือ (ดึงอัตโนมัติ)</label>
+          <div id="decomEquipInfo" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#F4F8FC;font-size:12.5px;color:var(--text2);line-height:1.7;">— เลือกเครื่องมือด้านบน —</div>
+        </div>
+      </div>
+
+      <!-- ส่วนที่ 2 -->
+      <div style="font-size:11px;font-weight:700;color:var(--warning);letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--warning);">ส่วนที่ 2 • เหตุผลในการยกเลิกการใช้งาน (เลือกได้มากกว่า 1)</div>
+      <div class="grid-2" style="margin-bottom:12px;gap:16px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">กลุ่มที่ 1 สภาพเครื่องมือ</div>
+          <div id="decomReasonG1" style="display:flex;flex-direction:column;gap:7px;"></div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">กลุ่มที่ 2 มาตรฐานและความปลอดภัย</div>
+          <div id="decomReasonG2" style="display:flex;flex-direction:column;gap:7px;"></div>
+        </div>
+      </div>
+      <div class="form-group full" style="margin-bottom:18px;"><label>อื่นๆ (ระบุ)</label><input id="decomReasonOther" placeholder="เหตุผลอื่น ๆ"></div>
+
+      <!-- ส่วนที่ 3 -->
+      <div style="font-size:11px;font-weight:700;color:var(--info);letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--info);">ส่วนที่ 3 • รายละเอียดสภาพปัจจุบันของเครื่องมือ</div>
+      <div class="form-grid" style="margin-bottom:18px;">
+        <div class="form-group"><label>สภาพภายนอก</label>
+          <select id="decomCondExt"><option value="">-</option><option>ปกติ</option><option>แตกร้าว/บิ่น</option><option>สนิม/กัดกร่อน</option><option>ชำรุดรุนแรง</option></select>
+        </div>
+        <div class="form-group"><label>การทำงาน</label>
+          <select id="decomCondFunc"><option value="">-</option><option>ทำงานได้ปกติ</option><option>ทำงานได้บางส่วน</option><option>ไม่ทำงานเลย</option></select>
+        </div>
+        <div class="form-group"><label>ความปลอดภัย</label>
+          <select id="decomCondSafe"><option value="">-</option><option>ปลอดภัย</option><option>มีความเสี่ยง ต้องระวัง</option><option>เป็นอันตราย ห้ามใช้</option></select>
+        </div>
+        <div class="form-group"><label>จำนวนครั้งที่ซ่อม</label><input id="decomRepairCount" type="number" placeholder="0"></div>
+        <div class="form-group"><label>ค่าใช้จ่ายซ่อมรวม (บาท)</label><input id="decomRepairCost" type="number" placeholder="0"></div>
+        <div class="form-group"><label>ซ่อมครั้งล่าสุดเมื่อ</label><input id="decomLastRepair" type="date"></div>
+        <div class="form-group full"><label>รายละเอียดเพิ่มเติม</label><textarea id="decomCondDetail" placeholder="รายละเอียดสภาพเครื่องมือ..."></textarea></div>
+      </div>
+
+      <!-- ส่วนที่ 4 -->
+      <div style="font-size:11px;font-weight:700;color:var(--success);letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--success);">ส่วนที่ 4 • แนวทางการจัดการหลังยกเลิกการใช้งาน</div>
+      <div class="grid-2" style="margin-bottom:8px;gap:16px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">การจัดการตัวเครื่อง</div>
+          <div id="decomHandleDevice" style="display:flex;flex-direction:column;gap:7px;"></div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">การจัดการข้อมูลและอุปกรณ์เสริม</div>
+          <div id="decomHandleData" style="display:flex;flex-direction:column;gap:7px;"></div>
+        </div>
+      </div>
+      <div class="form-group full" style="margin-bottom:18px;"><label>กรณีบริจาค ระบุหน่วยงานที่รับ</label><input id="decomDonateTo" placeholder="ชื่อหน่วยงานที่รับบริจาค (ถ้ามี)"></div>
+
+      <!-- ส่วนที่ 5 -->
+      <div style="font-size:11px;font-weight:700;color:var(--danger);letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--danger);">ส่วนที่ 5 • ความเห็นและการอนุมัติ</div>
+      <div class="form-grid">
+        <div class="form-group"><label>ความเห็นหัวหน้างานวิศวกรรม/ซ่อมบำรุง</label>
+          <select id="decomEngOpinion"><option value="">-</option><option value="เห็นด้วย">เห็นด้วยกับการยกเลิก</option><option value="ไม่เห็นด้วย">ไม่เห็นด้วย</option></select>
+        </div>
+        <div class="form-group"><label>เนื่องจาก</label><input id="decomEngReason" placeholder="เหตุผลประกอบความเห็น"></div>
+        <div class="form-group"><label>ความเห็นรองผู้อำนวยการฝ่ายบริหาร</label>
+          <select id="decomAdminDecision"><option value="">-</option><option value="อนุมัติ">อนุมัติ</option><option value="ไม่อนุมัติ">ไม่อนุมัติ</option><option value="ขอข้อมูลเพิ่มเติม">ขอข้อมูลเพิ่มเติม</option></select>
+        </div>
+        <div class="form-group"><label>หมายเหตุ</label><input id="decomAdminNote" placeholder="หมายเหตุผู้อนุมัติ"></div>
+        <div class="form-group"><label>ผู้แจ้งขอยกเลิก (ชื่อ)</label><input id="decomReqName" placeholder="ชื่อ-นามสกุล"></div>
+        <div class="form-group"><label>หัวหน้างานซ่อม (ชื่อ)</label><input id="decomHeadName" placeholder="ชื่อ-นามสกุล"></div>
+        <div class="form-group"><label>ผู้อนุมัติ/ผู้อำนวยการ (ชื่อ)</label><input id="decomApproverName" placeholder="ชื่อ-นามสกุล"></div>
+        <div class="form-group"><label>สถานะใบยกเลิก</label>
+          <select id="decomStatus"><option value="ร่าง">📝 ร่าง</option><option value="รออนุมัติ">⏳ รออนุมัติ</option><option value="อนุมัติแล้ว">✅ อนุมัติแล้ว</option><option value="ไม่อนุมัติ">❌ ไม่อนุมัติ</option></select>
+        </div>
+        <div class="form-group"><label>วันที่ยกเลิก (Official)</label><input id="decomOfficialDate" type="date"></div>
+        <div class="form-group"><label>เลขที่คำสั่ง/หนังสืออนุมัติ</label><input id="decomOrderNo" placeholder="เลขที่หนังสือ"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addDecomModal')">ยกเลิก</button>
+      <button class="btn btn-danger" onclick="saveDecom()">💾 บันทึกใบยกเลิก</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" style="
   position:fixed; bottom:24px; right:24px;
@@ -2570,6 +2721,7 @@ function showPage(id) {
     pm: ['การบำรุงรักษาเครื่องมือแพทย์', 'แผน PM และประวัติการบำรุงรักษา'],
     calibration: ['สอบเทียบ/ตรวจสอบเครื่องมือแพทย์', 'ติดตามกำหนดการสอบเทียบ'],
     borrow: ['ระบบยืม-คืนเครื่องมือแพทย์', 'จัดการการยืม-คืน'],
+    decommission: ['ยกเลิกการใช้งานเครื่องมือแพทย์', 'แบบฟอร์มยกเลิกการใช้งาน (DEC-MED-001) • อ้างอิง HS4 ข้อ 6.2'],
     inventory: ['คลังวัสดุสิ้นเปลือง', 'จัดการวัสดุและอะไหล่'],
     purchase: ['จัดซื้อ-จัดจ้าง', 'รายการจัดซื้อและสั่งซื้อ'],
     reports: ['รายงานและสถิติ', 'สรุปผลการดำเนินงาน'],
@@ -2578,7 +2730,7 @@ function showPage(id) {
   const t = titles[id] || ['', ''];
   document.getElementById('topbarTitle').textContent = t[0];
   document.getElementById('topbarSub').textContent = t[1];
-  const navMap = { dashboard:0, equipment:1, maintenance:2, pm:3, calibration:4, borrow:5, inventory:6, purchase:7, reports:8, settings:9 };
+  const navMap = { dashboard:0, equipment:1, maintenance:2, pm:3, calibration:4, borrow:5, decommission:6, inventory:7, purchase:8, reports:9, settings:10 };
   const navItems = document.querySelectorAll('.nav-item');
   if (navMap[id] !== undefined && navItems[navMap[id]]) navItems[navMap[id]].classList.add('active');
 }
@@ -4029,6 +4181,359 @@ renderCalibTable(calibData);
 syncAllCalibToHistory();
 
 
+// ============================================================
+//  DECOMMISSION (ยกเลิกการใช้งานเครื่องมือ) — DEC-MED-001
+// ============================================================
+let decomData = [];
+
+const DECOM_REASONS_G1 = [
+  'เสื่อมสภาพ ชำรุดเกินกว่าจะซ่อมแซมได้',
+  'ค่าซ่อมเกิน 50% ของราคาเครื่องใหม่',
+  'หมดอายุการใช้งานตามที่ผู้ผลิตกำหนด',
+  'ชิ้นส่วน/อะไหล่ไม่มีจำหน่ายแล้ว',
+  'ไม่ผ่านการสอบเทียบ ไม่สามารถแก้ไขได้',
+];
+const DECOM_REASONS_G2 = [
+  'ไม่ได้รับการรับรองมาตรฐาน CE / FDA / ISO',
+  'ถูกเรียกคืน (RECALL) จากผู้ผลิต',
+  'มี HAZARD ALERT ที่ไม่สามารถแก้ไขได้',
+  'ไม่มีใบอนุญาตนำเข้าจาก อย. ที่ถูกต้อง',
+  'เทคโนโลยีล้าสมัย ไม่ตรงกับมาตรฐานปัจจุบัน',
+];
+const DECOM_HANDLE_DEVICE = [
+  'ทำลาย/ตัดสิน ตามระเบียบพัสดุ',
+  'บริจาคให้หน่วยงานอื่น',
+  'ส่งคืนผู้ขาย/ผู้ผลิต',
+  'เก็บไว้เป็นอะไหล่บางชิ้นส่วน',
+  'จำหน่าย/ประมูล',
+];
+const DECOM_HANDLE_DATA = [
+  'ถอดชื่อออกจากทะเบียนเครื่องมือแพทย์',
+  'ยกเลิก PM Schedule ในระบบ',
+  'คืนคู่มือ/เอกสารกำกับ',
+  'คืน Accessory/อุปกรณ์เสริม',
+  'ลบข้อมูลผู้ป่วยในเครื่อง (ถ้ามี)',
+];
+
+function decomCheckRow(prefix, idx, label) {
+  return `<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;line-height:1.4;">
+    <input type="checkbox" id="${prefix}_${idx}" value="${label.replace(/"/g,'&quot;')}" style="margin-top:2px;flex-shrink:0;">
+    <span>${label}</span></label>`;
+}
+
+function renderDecomChecklists() {
+  document.getElementById('decomReasonG1').innerHTML = DECOM_REASONS_G1.map((l,i)=>decomCheckRow('dcg1',i,l)).join('');
+  document.getElementById('decomReasonG2').innerHTML = DECOM_REASONS_G2.map((l,i)=>decomCheckRow('dcg2',i,l)).join('');
+  document.getElementById('decomHandleDevice').innerHTML = DECOM_HANDLE_DEVICE.map((l,i)=>decomCheckRow('dchd',i,l)).join('');
+  document.getElementById('decomHandleData').innerHTML = DECOM_HANDLE_DATA.map((l,i)=>decomCheckRow('dchx',i,l)).join('');
+}
+
+function getCheckedValues(prefix, count) {
+  const out = [];
+  for (let i=0;i<count;i++){ const el=document.getElementById(prefix+'_'+i); if(el&&el.checked) out.push(el.value); }
+  return out;
+}
+function setCheckedValues(prefix, count, values) {
+  const set = new Set(values||[]);
+  for (let i=0;i<count;i++){ const el=document.getElementById(prefix+'_'+i); if(el) el.checked = set.has(el.value); }
+}
+
+function populateDecomEquipSelect() {
+  const sel = document.getElementById('decomEquipCode');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- เลือกเครื่องมือ --</option>';
+  equipmentData.forEach(e => { sel.innerHTML += `<option value="${e.code}">${e.code} – ${e.name} (${e.dept})</option>`; });
+}
+
+function autoFillDecomEquip(code) {
+  const e = equipmentData.find(x => x.code === code);
+  const box = document.getElementById('decomEquipInfo');
+  if (!e) { box.innerHTML = '— เลือกเครื่องมือด้านบน —'; return; }
+  const life = e.receiveDate && e.receiveDate !== '-' ? calcLifespan(e.receiveDate) : '-';
+  box.innerHTML = `
+    <b>ชื่อ:</b> ${e.name} &nbsp;|&nbsp; <b>รหัสครุภัณฑ์:</b> ${e.code}<br>
+    <b>ยี่ห้อ/รุ่น:</b> ${e.brand||'-'} / ${e.model||'-'} &nbsp;|&nbsp; <b>Serial:</b> ${e.serial||'-'}<br>
+    <b>ผู้ผลิต/ผู้จำหน่าย:</b> ${e.manufacturer||'-'} / ${e.supplier||'-'} &nbsp;|&nbsp; <b>ปีที่ผลิต:</b> ${e.year||'-'}<br>
+    <b>หน่วยงานผู้ใช้:</b> ${e.dept||'-'} &nbsp;|&nbsp; <b>วันที่รับมอบ:</b> ${formatStickerDate(e.receiveDate)}<br>
+    <b>อายุการใช้งาน:</b> ${life} &nbsp;|&nbsp; <b>ราคาที่จัดซื้อ:</b> ${e.price||'-'} บาท`;
+  // ดึงจำนวนครั้ง/ค่าซ่อมจากประวัติให้อัตโนมัติ
+  const hist = (equipHistory[code] && equipHistory[code].repair) || [];
+  if (hist.length) {
+    document.getElementById('decomRepairCount').value = hist.length;
+    const sum = hist.reduce((s,r)=>{ const n=parseFloat(String(r.cost||'0').replace(/[^0-9.]/g,'')); return s+(isNaN(n)?0:n); },0);
+    if (sum>0) document.getElementById('decomRepairCost').value = sum;
+  }
+}
+
+function openDecomForm() {
+  populateDecomEquipSelect();
+  renderDecomChecklists();
+  document.getElementById('decomEditId').value = '';
+  ['decomReqNo','decomResidual','decomReasonOther','decomRepairCount','decomRepairCost','decomLastRepair','decomCondDetail','decomDonateTo','decomEngReason','decomAdminNote','decomReqName','decomHeadName','decomApproverName','decomOfficialDate','decomOrderNo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['decomEquipCode','decomCondExt','decomCondFunc','decomCondSafe','decomEngOpinion','decomAdminDecision'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('decomStatus').value = 'ร่าง';
+  document.getElementById('decomEquipInfo').innerHTML = '— เลือกเครื่องมือด้านบน —';
+  openModal('addDecomModal');
+}
+
+function openDecomFormEdit(id) {
+  const d = decomData.find(x => x.id === id);
+  if (!d) return;
+  populateDecomEquipSelect();
+  renderDecomChecklists();
+  document.getElementById('decomEditId').value = id;
+  document.getElementById('decomEquipCode').value = d.equipCode || '';
+  if (d.equipCode) autoFillDecomEquip(d.equipCode);
+  const S = (id2,v)=>{const el=document.getElementById(id2);if(el)el.value=v||'';};
+  S('decomReqNo',d.reqNo); S('decomResidual',d.residual); S('decomReasonOther',d.reasonOther);
+  S('decomCondExt',d.condExt); S('decomCondFunc',d.condFunc); S('decomCondSafe',d.condSafe);
+  S('decomRepairCount',d.repairCount); S('decomRepairCost',d.repairCost);
+  S('decomLastRepair', d.lastRepairISO || ''); S('decomCondDetail',d.condDetail);
+  S('decomDonateTo',d.donateTo); S('decomEngOpinion',d.engOpinion); S('decomEngReason',d.engReason);
+  S('decomAdminDecision',d.adminDecision); S('decomAdminNote',d.adminNote);
+  S('decomReqName',d.reqName); S('decomHeadName',d.headName); S('decomApproverName',d.approverName);
+  S('decomStatus',d.status||'ร่าง'); S('decomOfficialDate', d.officialDateISO || ''); S('decomOrderNo',d.orderNo);
+  setCheckedValues('dcg1', DECOM_REASONS_G1.length, (d.reasons||'').split('|'));
+  setCheckedValues('dcg2', DECOM_REASONS_G2.length, (d.reasons||'').split('|'));
+  setCheckedValues('dchd', DECOM_HANDLE_DEVICE.length, (d.handleDevice||'').split('|'));
+  setCheckedValues('dchx', DECOM_HANDLE_DATA.length, (d.handleData||'').split('|'));
+  openModal('addDecomModal');
+}
+
+function saveDecom() {
+  const code = document.getElementById('decomEquipCode').value;
+  if (!code) { alert('กรุณาเลือกเครื่องมือ'); return; }
+  const e = equipmentData.find(x => x.code === code) || {};
+  const editId = document.getElementById('decomEditId').value;
+  const reasons = [...getCheckedValues('dcg1',DECOM_REASONS_G1.length), ...getCheckedValues('dcg2',DECOM_REASONS_G2.length)].join('|');
+  const lastRepairISO = document.getElementById('decomLastRepair').value;
+  const officialISO = document.getElementById('decomOfficialDate').value;
+
+  const record = {
+    id: editId || 'DEC-' + String(Date.now()),
+    reqNo: document.getElementById('decomReqNo').value.trim(),
+    equipCode: code,
+    equipName: e.name || code,
+    brand: e.brand || '', model: e.model || '', serial: e.serial || '',
+    manufacturer: e.manufacturer || '', supplier: e.supplier || '',
+    dept: e.dept || '', year: e.year || '',
+    receiveDate: e.receiveDate || '', price: e.price || '',
+    lifespan: e.receiveDate && e.receiveDate !== '-' ? calcLifespan(e.receiveDate) : '-',
+    residual: document.getElementById('decomResidual').value,
+    reasons: reasons,
+    reasonOther: document.getElementById('decomReasonOther').value.trim(),
+    condExt: document.getElementById('decomCondExt').value,
+    condFunc: document.getElementById('decomCondFunc').value,
+    condSafe: document.getElementById('decomCondSafe').value,
+    repairCount: document.getElementById('decomRepairCount').value,
+    repairCost: document.getElementById('decomRepairCost').value,
+    lastRepairISO: lastRepairISO,
+    lastRepair: lastRepairISO ? isoToThaiDate(lastRepairISO) : '',
+    condDetail: document.getElementById('decomCondDetail').value.trim(),
+    handleDevice: getCheckedValues('dchd',DECOM_HANDLE_DEVICE.length).join('|'),
+    handleData: getCheckedValues('dchx',DECOM_HANDLE_DATA.length).join('|'),
+    donateTo: document.getElementById('decomDonateTo').value.trim(),
+    engOpinion: document.getElementById('decomEngOpinion').value,
+    engReason: document.getElementById('decomEngReason').value.trim(),
+    adminDecision: document.getElementById('decomAdminDecision').value,
+    adminNote: document.getElementById('decomAdminNote').value.trim(),
+    reqName: document.getElementById('decomReqName').value.trim(),
+    headName: document.getElementById('decomHeadName').value.trim(),
+    approverName: document.getElementById('decomApproverName').value.trim(),
+    status: document.getElementById('decomStatus').value,
+    officialDateISO: officialISO,
+    officialDate: officialISO ? isoToThaiDate(officialISO) : '',
+    orderNo: document.getElementById('decomOrderNo').value.trim(),
+  };
+
+  if (editId) {
+    const idx = decomData.findIndex(x => x.id === editId);
+    if (idx > -1) decomData[idx] = record;
+  } else {
+    decomData.unshift(record);
+  }
+  syncDecomToSheet(record);
+  renderDecomTable(decomData);
+  closeModal('addDecomModal');
+  showToast('💾 บันทึกใบยกเลิกการใช้งาน ' + code + ' เรียบร้อย');
+}
+
+function deleteDecom(id) {
+  const d = decomData.find(x => x.id === id);
+  if (!d) return;
+  if (!confirm(`ต้องการลบใบยกเลิก ${d.reqNo || d.id} – ${d.equipName}?`)) return;
+  decomData = decomData.filter(x => x.id !== id);
+  syncDeleteDecomToSheet(id);
+  renderDecomTable(decomData);
+  showToast('ลบใบยกเลิกแล้ว');
+}
+
+function decomStatusBadge(s) {
+  if (s === 'อนุมัติแล้ว') return '<span class="badge badge-success"><span class="badge-dot"></span>อนุมัติแล้ว</span>';
+  if (s === 'ไม่อนุมัติ') return '<span class="badge badge-danger"><span class="badge-dot"></span>ไม่อนุมัติ</span>';
+  if (s === 'รออนุมัติ') return '<span class="badge badge-warning"><span class="badge-dot"></span>รออนุมัติ</span>';
+  return '<span class="badge badge-gray"><span class="badge-dot"></span>ร่าง</span>';
+}
+
+function renderDecomTable(data) {
+  const tbody = document.getElementById('decomBody');
+  if (!tbody) return;
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3);">ยังไม่มีใบยกเลิกการใช้งาน — กด ➕ สร้างใบยกเลิกใหม่</td></tr>';
+  } else {
+    tbody.innerHTML = data.map(d => {
+      const mainReason = (d.reasons || '').split('|').filter(Boolean)[0] || d.reasonOther || '-';
+      return `<tr>
+        <td><strong style="color:var(--danger);">${d.reqNo || d.id}</strong></td>
+        <td><div style="font-weight:600;font-size:13px;">${d.equipName}</div><div style="font-size:11px;color:var(--text3);">${d.equipCode}</div></td>
+        <td>${d.dept || '-'}</td>
+        <td style="font-size:12px;max-width:240px;">${mainReason}</td>
+        <td style="font-size:12px;">${d.officialDate || cleanDateDisplay(d.lastRepair) || '-'}</td>
+        <td>${decomStatusBadge(d.status)}</td>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="printDecomForm('${d.id}')" title="พิมพ์ฟอร์ม" style="font-size:11px;">🖨️ พิมพ์</button>
+          <button class="icon-btn edit" onclick="openDecomFormEdit('${d.id}')" title="แก้ไข">✏️</button>
+          <button class="icon-btn del" onclick="deleteDecom('${d.id}')" title="ลบ">🗑️</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+  const el = document.getElementById('decomCount');
+  if (el) el.textContent = `รวม ${data.length} รายการ`;
+}
+
+function filterDecom(q) {
+  const s = (q||'').toLowerCase();
+  renderDecomTable(decomData.filter(d =>
+    (d.reqNo||'').toLowerCase().includes(s) || (d.equipName||'').toLowerCase().includes(s) ||
+    (d.equipCode||'').toLowerCase().includes(s) || (d.dept||'').toLowerCase().includes(s)));
+}
+function filterDecomStatus(v) { renderDecomTable(v ? decomData.filter(d => d.status === v) : decomData); }
+
+// ===== พิมพ์ฟอร์มราชการ DEC-MED-001 =====
+function printDecomForm(id) {
+  const d = decomData.find(x => x.id === id);
+  if (!d) return;
+  const cb = (on) => on ? '☑' : '☐';
+  const has = (field, label) => (String(field||'').split('|').indexOf(label) > -1);
+  const opt = (sel, val) => sel === val;
+  const hosp = (function(){ try { return JSON.parse(localStorage.getItem('ymn_hosp_settings')||'{}'); } catch(e){ return {}; } })();
+  const hospName = hosp.name || 'โรงพยาบาลยางชุมน้อย';
+
+  const reasonList = (arr, group) => arr.map(l => `<div>${cb(has(d.reasons,l))} ${l}</div>`).join('');
+  const w = window.open('', '_blank', 'width=900,height=1000');
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<title>DEC-MED-001 ${d.equipName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Sarabun',sans-serif;color:#000;font-size:13px;line-height:1.45;padding:18mm 15mm;}
+  .head{display:flex;border:1.5px solid #000;}
+  .head .t{flex:1;padding:8px 12px;border-right:1.5px solid #000;}
+  .head .t b{font-size:16px;} .head .t div{font-size:11px;color:#333;}
+  .head .r{width:200px;padding:8px 12px;font-size:11px;}
+  .sec{margin-top:14px;border:1.5px solid #000;padding:6px 10px;font-weight:700;background:#f0f0f0;}
+  table{width:100%;border-collapse:collapse;margin-top:6px;}
+  td{border:1px solid #000;padding:5px 8px;font-size:12px;vertical-align:top;}
+  .lbl{background:#f7f7f7;font-weight:600;width:130px;}
+  .grp{display:flex;gap:20px;margin-top:8px;}
+  .grp>div{flex:1;}
+  .grp .gh{font-weight:700;margin-bottom:5px;}
+  .grp div div{margin-bottom:3px;font-size:12px;}
+  .cond td{padding:6px 8px;}
+  .sign{display:flex;gap:10px;margin-top:24px;text-align:center;}
+  .sign>div{flex:1;border:1px solid #000;padding:12px 8px;font-size:12px;}
+  .ln{margin:10px 0 4px;}
+  .foot{margin-top:14px;font-size:12px;}
+  .foot div{margin-bottom:4px;}
+  @media print{body{padding:10mm;} .sec{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style></head><body>
+  <div class="head">
+    <div class="t"><b>แบบฟอร์มยกเลิกการใช้งานเครื่องมือทางการแพทย์</b>
+      <div>Medical Equipment Decommissioning / Write-Off Form</div>
+      <div style="margin-top:4px;">${hospName}</div></div>
+    <div class="r"><b>DEC-MED-001</b><br>Rev: 01<br>อ้างอิง HS4 ข้อ 6.2<br>เลขที่คำร้อง: ${d.reqNo||'.............'}</div>
+  </div>
+
+  <div class="sec">ส่วนที่ 1 ข้อมูลเครื่องมือทางการแพทย์</div>
+  <table>
+    <tr><td class="lbl">ชื่อเครื่องมือแพทย์</td><td>${d.equipName||''}</td><td class="lbl">รหัสครุภัณฑ์</td><td>${d.equipCode||''}</td></tr>
+    <tr><td class="lbl">ยี่ห้อ / รุ่น</td><td>${(d.brand||'')+' / '+(d.model||'')}</td><td class="lbl">Serial No.</td><td>${d.serial||''}</td></tr>
+    <tr><td class="lbl">ผู้ผลิต / ตัวแทนจำหน่าย</td><td>${(d.manufacturer||'')+' '+(d.supplier?'/ '+d.supplier:'')}</td><td class="lbl">ปีที่ผลิต</td><td>${d.year||''}</td></tr>
+    <tr><td class="lbl">หน่วยงานผู้ใช้งาน</td><td>${d.dept||''}</td><td class="lbl">วันที่รับมอบ</td><td>${formatStickerDate(d.receiveDate)}</td></tr>
+    <tr><td class="lbl">อายุการใช้งาน (ปี)</td><td>${d.lifespan||''}</td><td class="lbl">ราคาที่จัดซื้อ (บาท)</td><td>${d.price||''}</td></tr>
+    <tr><td class="lbl">มูลค่าคงเหลือ (บาท)</td><td colspan="3">${d.residual||''}</td></tr>
+  </table>
+
+  <div class="sec">ส่วนที่ 2 เหตุผลในการยกเลิกการใช้งาน (เลือกได้มากกว่า 1 ข้อ)</div>
+  <div class="grp">
+    <div><div class="gh">กลุ่มที่ 1 สภาพเครื่องมือ</div>${reasonList(DECOM_REASONS_G1)}</div>
+    <div><div class="gh">กลุ่มที่ 2 มาตรฐานและความปลอดภัย</div>${reasonList(DECOM_REASONS_G2)}</div>
+  </div>
+  <div style="margin-top:8px;">${cb(!!d.reasonOther)} อื่นๆ (ระบุ): ${d.reasonOther||'................................................................'}</div>
+
+  <div class="sec">ส่วนที่ 3 รายละเอียดสภาพปัจจุบันของเครื่องมือ</div>
+  <table class="cond">
+    <tr><td class="lbl">สภาพภายนอก</td><td>${cb(opt(d.condExt,'ปกติ'))} ปกติ &nbsp; ${cb(opt(d.condExt,'แตกร้าว/บิ่น'))} แตกร้าว/บิ่น &nbsp; ${cb(opt(d.condExt,'สนิม/กัดกร่อน'))} สนิม/กัดกร่อน &nbsp; ${cb(opt(d.condExt,'ชำรุดรุนแรง'))} ชำรุดรุนแรง</td></tr>
+    <tr><td class="lbl">การทำงาน</td><td>${cb(opt(d.condFunc,'ทำงานได้ปกติ'))} ทำงานได้ปกติ &nbsp; ${cb(opt(d.condFunc,'ทำงานได้บางส่วน'))} ทำงานได้บางส่วน &nbsp; ${cb(opt(d.condFunc,'ไม่ทำงานเลย'))} ไม่ทำงานเลย</td></tr>
+    <tr><td class="lbl">ความปลอดภัย</td><td>${cb(opt(d.condSafe,'ปลอดภัย'))} ปลอดภัย &nbsp; ${cb(opt(d.condSafe,'มีความเสี่ยง ต้องระวัง'))} มีความเสี่ยง ต้องระวัง &nbsp; ${cb(opt(d.condSafe,'เป็นอันตราย ห้ามใช้'))} เป็นอันตราย ห้ามใช้</td></tr>
+    <tr><td class="lbl">จำนวนครั้งที่ซ่อม</td><td>${d.repairCount||'.......'} ครั้ง &nbsp; ค่าใช้จ่ายซ่อมรวม ${d.repairCost||'.......'} บาท &nbsp; ครั้งล่าสุดเมื่อ ${d.lastRepair||'......./......./.......'}</td></tr>
+    <tr><td class="lbl">รายละเอียดเพิ่มเติม</td><td style="height:48px;">${d.condDetail||''}</td></tr>
+  </table>
+
+  <div class="sec">ส่วนที่ 4 แนวทางการจัดการหลังยกเลิกการใช้งาน</div>
+  <div class="grp">
+    <div><div class="gh">การจัดการตัวเครื่อง</div>${DECOM_HANDLE_DEVICE.map(l=>`<div>${cb(has(d.handleDevice,l))} ${l}${l==='บริจาคให้หน่วยงานอื่น'&&d.donateTo?(' ('+d.donateTo+')'):''}</div>`).join('')}</div>
+    <div><div class="gh">การจัดการข้อมูลและอุปกรณ์เสริม</div>${DECOM_HANDLE_DATA.map(l=>`<div>${cb(has(d.handleData,l))} ${l}</div>`).join('')}</div>
+  </div>
+
+  <div class="sec">ส่วนที่ 5 ความเห็นและการอนุมัติ</div>
+  <div class="foot">
+    <div><b>ความเห็นหัวหน้างานวิศวกรรม/ซ่อมบำรุง:</b> ${cb(opt(d.engOpinion,'เห็นด้วย'))} เห็นด้วย &nbsp; ${cb(opt(d.engOpinion,'ไม่เห็นด้วย'))} ไม่เห็นด้วย &nbsp; เนื่องจาก ${d.engReason||'.......................................'}</div>
+    <div><b>ความเห็นรองผู้อำนวยการฝ่ายบริหาร:</b> ${cb(opt(d.adminDecision,'อนุมัติ'))} อนุมัติ &nbsp; ${cb(opt(d.adminDecision,'ไม่อนุมัติ'))} ไม่อนุมัติ &nbsp; ${cb(opt(d.adminDecision,'ขอข้อมูลเพิ่มเติม'))} ขอข้อมูลเพิ่มเติม</div>
+    <div>หมายเหตุ: ${d.adminNote||''}</div>
+  </div>
+  <div class="sign">
+    <div>ผู้แจ้งขอยกเลิก<div class="ln">ลงชื่อ ............................</div>( ${d.reqName||'..........................'} )<br>วันที่ ......./......./.......</div>
+    <div>หัวหน้างานซ่อม<div class="ln">ลงชื่อ ............................</div>( ${d.headName||'..........................'} )<br>วันที่ ......./......./.......</div>
+    <div>ผู้อนุมัติ / ผู้อำนวยการ<div class="ln">ลงชื่อ ............................</div>( ${d.approverName||'..........................'} )<br>วันที่ ......./......./.......</div>
+  </div>
+  <div class="foot" style="margin-top:14px;">
+    <div>วันที่ยกเลิก (Official): ${d.officialDate||'......./......./.......'} &nbsp;&nbsp; เลขที่คำสั่ง/หนังสืออนุมัติ: ${d.orderNo||'..........................'}</div>
+  </div>
+  <script>window.onload=function(){document.fonts.ready.then(function(){window.print();});};<\/script>
+</body></html>`);
+  w.document.close();
+}
+
+// ===== SYNC: decommission ↔ Google Sheets =====
+async function syncDecomToSheet(rec) {
+  if (!GAS_URL) return;
+  await gasCall({ body: { action: 'saveDecom', data: { ...rec, createdAt: '' } } });
+}
+async function syncDeleteDecomToSheet(id) {
+  if (!GAS_URL) return;
+  await gasCall({ body: { action: 'deleteDecom', id } });
+}
+function sheetRowToDecom(row) {
+  return {
+    id: row.id, reqNo: row.reqNo, equipCode: row.equipCode, equipName: row.equipName,
+    brand: row.brand, model: row.model, serial: row.serial, manufacturer: row.manufacturer,
+    supplier: row.supplier, dept: row.dept, year: row.year, receiveDate: row.receiveDate,
+    price: row.price, lifespan: row.lifespan, residual: row.residual,
+    reasons: row.reasons, reasonOther: row.reasonOther,
+    condExt: row.condExt, condFunc: row.condFunc, condSafe: row.condSafe,
+    repairCount: row.repairCount, repairCost: row.repairCost, lastRepair: row.lastRepair,
+    condDetail: row.condDetail, handleDevice: row.handleDevice, handleData: row.handleData,
+    donateTo: row.donateTo, engOpinion: row.engOpinion, engReason: row.engReason,
+    adminDecision: row.adminDecision, adminNote: row.adminNote,
+    reqName: row.reqName, headName: row.headName, approverName: row.approverName,
+    status: row.status, officialDate: row.officialDate, orderNo: row.orderNo,
+  };
+}
+
+renderDecomTable(decomData);
+
 
 // ============================================================
 //  GOOGLE SHEETS INTEGRATION
@@ -4202,6 +4707,14 @@ async function loadAllFromSheets() {
     });
   }
 
+  // ===== Decommission (ยกเลิกการใช้งาน) =====
+  if (res.decom && res.decom.length > 0) {
+    const ids = new Set(res.decom.map(r => r.id));
+    decomData = decomData.filter(d => !ids.has(d.id));
+    res.decom.forEach(row => decomData.unshift(sheetRowToDecom(row)));
+    renderDecomTable(decomData);
+  }
+
   setSyncStatus('ok', `โหลดข้อมูลจาก Sheets แล้ว • ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`);
   showToast('✅ โหลดข้อมูลจาก Google Sheets เรียบร้อย');
 
@@ -4211,6 +4724,7 @@ async function loadAllFromSheets() {
   renderRepairPage();
   renderPMPage();
   renderBorrowPage();
+  renderDecomTable(decomData);
   renderDashboard();
   updateDashboardStats();
 }
@@ -5011,6 +5525,7 @@ showPage = function(id) {
     if (id === 'maintenance') renderRepairPage();
     if (id === 'pm')          renderPMPage();
     if (id === 'borrow')      renderBorrowPage();
+    if (id === 'decommission') renderDecomTable(decomData);
     if (id === 'settings')    { updateSettingsCounts(); renderUserMgmt(); loadHospSettings(); }
   }, 100);
 };
