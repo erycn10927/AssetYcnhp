@@ -1180,7 +1180,7 @@
     </div>
     <!-- ===== PAGE: REPORTS ===== -->
     <div class="page" id="page-reports">
-      <div class="grid-3" style="margin-bottom:20px;">
+      <div class="grid-3" style="margin-bottom:20px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));">
         <div class="card" style="cursor:pointer;" onclick="generateRepairReport()">
           <div class="card-body" style="text-align:center;padding:24px 16px;">
             <div style="font-size:36px;margin-bottom:10px;">💰</div>
@@ -1203,6 +1203,14 @@
             <div style="font-weight:700;font-size:15px;">รายงาน PM ประจำปี</div>
             <div style="font-size:12px;color:var(--text3);margin-top:4px;">แผน vs ผลดำเนินการ</div>
             <button onclick="event.stopPropagation();exportPMExcel()" class="btn btn-outline btn-sm" style="margin-top:10px;font-size:11px;">📥 Export Excel</button>
+          </div>
+        </div>
+        <div class="card" style="cursor:pointer;" onclick="generateDecomReport()">
+          <div class="card-body" style="text-align:center;padding:24px 16px;">
+            <div style="font-size:36px;margin-bottom:10px;">🚫</div>
+            <div style="font-weight:700;font-size:15px;">รายงานเครื่องมือยกเลิกใช้งาน</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:4px;">สรุปการจำหน่าย/ตัดจำหน่าย</div>
+            <button onclick="event.stopPropagation();exportDecomExcel()" class="btn btn-outline btn-sm" style="margin-top:10px;font-size:11px;">📥 Export Excel</button>
           </div>
         </div>
       </div>
@@ -4988,6 +4996,80 @@ function generatePMReport() {
       </table>
     </div>`;
 }
+
+function generateDecomReport() {
+  const el = document.getElementById('reportSummaryBody');
+  if (!el) return;
+  if (!decomData.length) {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);"><div style="font-size:48px;margin-bottom:12px;">🚫</div><div>ยังไม่มีรายการยกเลิกการใช้งาน</div></div>';
+    return;
+  }
+  // สรุปตามสถานะ
+  const byStatus = {};
+  decomData.forEach(d => { const s = d.status || 'ร่าง'; byStatus[s] = (byStatus[s]||0)+1; });
+  // สรุปตามแผนก
+  const byDept = {};
+  decomData.forEach(d => { const k=(d.dept||'ไม่ระบุ').replace(/\s*\(.*?\)/g,'').trim(); byDept[k]=(byDept[k]||0)+1; });
+  // สรุปเหตุผลที่พบบ่อย
+  const byReason = {};
+  decomData.forEach(d => { (d.reasons||'').split('|').filter(Boolean).forEach(r => { byReason[r]=(byReason[r]||0)+1; }); });
+  const topReasons = Object.entries(byReason).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  // มูลค่าคงเหลือรวม
+  const totalResidual = decomData.reduce((s,d)=>{ const n=parseFloat(String(d.residual||'0').replace(/[^0-9.]/g,'')); return s+(isNaN(n)?0:n); },0);
+  const approved = byStatus['อนุมัติแล้ว']||0;
+
+  const statusChip = (label, n, color) => `<div style="flex:1;min-width:120px;text-align:center;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;">
+    <div style="font-size:24px;font-weight:700;color:${color};">${n}</div><div style="font-size:12px;color:var(--text3);margin-top:3px;">${label}</div></div>`;
+
+  el.innerHTML = `
+    <div class="alert alert-info">🚫 ใบยกเลิกทั้งหมด <strong>${decomData.length} รายการ</strong> • อนุมัติแล้ว ${approved} • มูลค่าคงเหลือรวม <strong>${totalResidual.toLocaleString('th-TH')} บาท</strong></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+      ${statusChip('อนุมัติแล้ว', byStatus['อนุมัติแล้ว']||0, 'var(--success)')}
+      ${statusChip('รออนุมัติ', byStatus['รออนุมัติ']||0, 'var(--warning)')}
+      ${statusChip('ร่าง', byStatus['ร่าง']||0, 'var(--text3)')}
+      ${statusChip('ไม่อนุมัติ', byStatus['ไม่อนุมัติ']||0, 'var(--danger)')}
+    </div>
+    <div class="grid-2" style="margin-bottom:18px;gap:20px;">
+      <div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:8px;">เหตุผลที่พบบ่อย</div>
+        ${topReasons.length ? topReasons.map(([r,n])=>{
+          const pct = Math.round(n/decomData.length*100);
+          return `<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>${r}</span><span style="color:var(--text3);">${n}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--danger);"></div></div></div>`;
+        }).join('') : '<div style="color:var(--text3);font-size:12px;">-</div>'}
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:8px;">แยกตามแผนก</div>
+        ${Object.entries(byDept).sort((a,b)=>b[1]-a[1]).map(([d,n])=>{
+          const pct = Math.round(n/decomData.length*100);
+          return `<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>${d}</span><span style="color:var(--text3);">${n} เครื่อง</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--primary);"></div></div></div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table style="font-size:13px;">
+        <thead><tr><th>เลขที่คำร้อง</th><th>รหัส</th><th>ชื่อเครื่องมือ</th><th>แผนก</th><th>เหตุผลหลัก</th><th>มูลค่าคงเหลือ</th><th>วันที่ยกเลิก</th><th>สถานะ</th></tr></thead>
+        <tbody>${decomData.map(d => {
+          const mainReason = (d.reasons||'').split('|').filter(Boolean)[0] || d.reasonOther || '-';
+          return `<tr><td>${d.reqNo||d.id}</td><td>${d.equipCode}</td><td>${d.equipName}</td><td>${d.dept||'-'}</td><td>${mainReason}</td><td style="text-align:right;">${d.residual||'-'}</td><td>${d.officialDate||'-'}</td><td>${decomStatusBadge(d.status)}</td></tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function exportDecomExcel() {
+  if (!decomData.length) { showToast('⚠️ ยังไม่มีข้อมูลยกเลิกการใช้งาน'); return; }
+  const headers = ['เลขที่คำร้อง','รหัสครุภัณฑ์','ชื่อเครื่องมือ','ยี่ห้อ/รุ่น','Serial','แผนก','อายุการใช้งาน','ราคาจัดซื้อ','มูลค่าคงเหลือ','เหตุผล','สภาพภายนอก','การทำงาน','ความปลอดภัย','จำนวนครั้งซ่อม','ค่าซ่อมรวม','แนวทางจัดการเครื่อง','ความเห็นวิศวกรรม','ผลอนุมัติ','ผู้อนุมัติ','วันที่ยกเลิก','เลขที่คำสั่ง','สถานะ'];
+  const rows = decomData.map(d => [
+    d.reqNo||d.id, d.equipCode, d.equipName, (d.brand||'')+' / '+(d.model||''), d.serial||'-', d.dept||'-',
+    d.lifespan||'-', d.price||'-', d.residual||'-',
+    (d.reasons||'').split('|').filter(Boolean).join('; ') + (d.reasonOther?(' / '+d.reasonOther):''),
+    d.condExt||'-', d.condFunc||'-', d.condSafe||'-', d.repairCount||'-', d.repairCost||'-',
+    (d.handleDevice||'').split('|').filter(Boolean).join('; '),
+    d.engOpinion||'-', d.adminDecision||'-', d.approverName||'-', d.officialDate||'-', d.orderNo||'-', d.status||'-'
+  ]);
+  exportToExcel(headers, rows, 'decommission_report');
+}
+
 
 
 function renderDashboard() {
