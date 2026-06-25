@@ -3393,7 +3393,13 @@ function saveHistEntry(isEdit) {
     } else {
       hist.repair.unshift(entry);
     }
+    const _eqR = equipmentData.find(e => e.code === code);
+    syncRepairToSheet({ id:newId, equipCode:code, equipName:_eqR?_eqR.name:code, dept:_eqR?_eqR.dept:'-',
+      repairDate:thDate, downtimeStart:entry.downtimeStart, downtimeEnd:entry.downtimeEnd, downtimeDays:entry.downtimeDays,
+      symptom:detailVal, repairType:'-', urgency:'-', by:byVal||'-', cost:entry.cost, status:entry.status, note:noteVal });
     renderHistoryRepair(code);
+    renderRepairPage();
+    updateDashboardStats();
   } else if (type === 'pm') {
     if (!detailVal) { alert('กรุณาระบุรายละเอียด PM'); return; }
     const entry = {
@@ -3406,7 +3412,11 @@ function saveHistEntry(isEdit) {
       const idx = hist.pm.findIndex(x => x.id === editId);
       if (idx > -1) hist.pm[idx] = entry; else hist.pm.unshift(entry);
     } else { hist.pm.unshift(entry); }
+    const _eqP = equipmentData.find(e => e.code === code);
+    syncPMToSheet({ id:newId, equipCode:code, equipName:_eqP?_eqP.name:code, dept:_eqP?_eqP.dept:'-',
+      pmDate:thDate, pmFreq:'-', by:byVal||'-', detail:detailVal, cost:entry.cost, result:entry.result, note:noteVal });
     renderHistoryPM(code);
+    renderPMPage();
   } else if (type === 'calib') {
     if (!byVal) { alert('กรุณาระบุผู้สอบเทียบ'); return; }
     if (!document.getElementById('hi_nextdate')?.value) { alert('กรุณาระบุวันครบกำหนดถัดไป'); return; }
@@ -4742,9 +4752,17 @@ function sheetRowToEquip(row) {
 }
 function sheetRowToCalib(row) {
   // โหลด fileLinks จาก Sheets กลับมาเป็น files array
+  let raw = row.fileLinks || '';
+  // เผื่อข้อมูลเก่าที่ลิงก์ตกไปอยู่คอลัมน์อื่น (เช่น createdAt หรือคอลัมน์ไม่มีหัว) — ค้นหา http ในทุกค่า
+  if (!raw || raw.indexOf('http') === -1) {
+    for (const k in row) {
+      const v = String(row[k] || '').trim();
+      if (/^https?:\/\//.test(v)) { raw = v; break; }
+    }
+  }
   let files = [];
-  if (row.fileLinks) {
-    const links = String(row.fileLinks).split(',').map(l => l.trim()).filter(l => l.startsWith('http'));
+  if (raw) {
+    const links = String(raw).split(/[\n,]+/).map(l => l.trim()).filter(l => l.startsWith('http'));
     files = links.map(url => {
       const fileIdMatch = url.match(/\/d\/([^/]+)\//);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
@@ -4764,7 +4782,7 @@ function sheetRowToCalib(row) {
     id: row.id, equipCode: row.equipCode, equipName: row.equipName,
     dept: row.dept, calibDate: row.calibDate, nextDate: row.nextDate,
     by: row.by, result: row.result, note: row.note,
-    fileLinks: row.fileLinks || '',
+    fileLinks: raw || '',
     files: files,
   };
 }
@@ -5197,6 +5215,10 @@ function returnBorrow(id, code) {
   if (b) {
     b.status = 'คืนแล้ว';
     b.dateIn = new Date().toLocaleDateString('th-TH', {day:'2-digit',month:'2-digit',year:'numeric'});
+    const _eqB = equipmentData.find(e => e.code === code);
+    syncBorrowToSheet({ id:id, equipCode:code, equipName:_eqB?_eqB.name:code, dept:_eqB?_eqB.dept:'-',
+      dateOut:b.dateOut, dateIn:b.dateIn, borrower:b.borrower, borrowDept:b.dept, reason:b.reason,
+      status:'คืนแล้ว', condition:b.condition||'-', note:'' });
   }
   renderBorrowPage();
   showToast('✅ บันทึกการรับคืนแล้ว');
@@ -5353,6 +5375,11 @@ function saveEditRepair(repairId, equipCode) {
       downtimeStart: dtStart ? isoToThaiDate(dtStart) : '-',
       downtimeEnd: dtEnd ? isoToThaiDate(dtEnd) : '-',
     };
+    const _eqE = equipmentData.find(e => e.code === code);
+    const rr = hist.repair[idx];
+    syncRepairToSheet({ id:repairId, equipCode:code, equipName:_eqE?_eqE.name:code, dept:_eqE?_eqE.dept:'-',
+      repairDate:rr.date, downtimeStart:rr.downtimeStart, downtimeEnd:rr.downtimeEnd, downtimeDays:rr.downtimeDays,
+      symptom:rr.detail, repairType:'-', urgency:'-', by:rr.by, cost:rr.cost, status:rr.status||'-', note:rr.note });
   }
 
   resetRepairModalBtn();
@@ -5401,6 +5428,12 @@ function saveRepairStatus() {
   if (cost) r.cost = Number(cost).toLocaleString('th-TH');
   if (note) r.note = note;
   if (finishDate) r.finishDate = isoToThaiDate(finishDate);
+
+  // sync บันทึกซ่อม (สถานะ/ค่าซ่อม) กลับเข้า Google Sheets
+  const _eqU = equipmentData.find(e => e.code === equipCode);
+  syncRepairToSheet({ id:repairId, equipCode:equipCode, equipName:_eqU?_eqU.name:equipCode, dept:_eqU?_eqU.dept:'-',
+    repairDate:r.date, downtimeStart:r.downtimeStart||'-', downtimeEnd:r.downtimeEnd||r.finishDate||'-', downtimeDays:r.downtimeDays||'-',
+    symptom:r.detail, repairType:'-', urgency:'-', by:r.by||'-', cost:r.cost||'-', status:newStatus, note:r.note||'' });
 
   // ถ้าเสร็จสิ้น → อัปเดตสถานะเครื่องมือกลับเป็นพร้อมใช้งาน
   if (newStatus === 'เสร็จสิ้น') {
